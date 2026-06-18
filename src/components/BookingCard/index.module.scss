@@ -96,6 +96,42 @@
   font-weight: $font-weight-medium;
 }
 
+.extendInfo {
+  margin-top: $spacing-md;
+  padding: $spacing-md;
+  background-color: rgba(34, 197, 94, 0.05);
+  border-radius: $radius-md;
+  border: 2rpx solid rgba(34, 197, 94, 0.2);
+}
+
+.extendItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-xs;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.extendLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.extendValue {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.extendDivider {
+  height: 1rpx;
+  background-color: rgba(34, 197, 94, 0.2);
+  margin-top: $spacing-xs;
+}
+
 .coachInfo {
   display: flex;
   align-items: center;

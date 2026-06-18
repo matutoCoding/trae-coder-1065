@@ -38,16 +38,40 @@ export interface Booking {
   hasCoach: boolean;
   coachId?: string;
   coachName?: string;
+  pricePerHour?: number;
+  originalDuration?: number;
+  extendedDuration?: number;
+  totalDuration?: number;
+  originalPrice?: number;
+  extendPrice?: number;
+  coachPricePerHour?: number;
+  originalEndTime?: string;
+  extendedFromBookingId?: string;
+  isExtended?: boolean;
 }
 
 export type PriorityLevel = 'normal' | 'vip' | 'emergency';
+
+export type SlotStatus = 'available' | 'booked' | 'maintenance' | 'past';
+
+export interface ScheduleSlot {
+  courtId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: SlotStatus;
+  bookingId?: string;
+  bookingUserName?: string;
+  pricePerHour?: number;
+}
 
 export interface QueueItem {
   id: string;
   queueNumber: number;
   userId: string;
   userName: string;
-  courtId?: string;
+  courtId: string;
+  courtName: string;
   priority: PriorityLevel;
   priorityLabel: string;
   status: 'waiting' | 'called' | 'playing' | 'completed' | 'left';

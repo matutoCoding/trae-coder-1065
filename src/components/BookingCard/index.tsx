@@ -97,11 +97,17 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking, onCancel, onDetail, 
         <View className={styles.infoItem}>
           <Text className={styles.infoLabel}>使用时长</Text>
           <Text className={styles.infoValue}>
-            {dayjs(`2000-01-01 ${booking.endTime}`).diff(
-              dayjs(`2000-01-01 ${booking.startTime}`),
-              'hour'
-            )}
+            {booking.totalDuration ||
+              dayjs(`2000-01-01 ${booking.endTime}`).diff(
+                dayjs(`2000-01-01 ${booking.startTime}`),
+                'hour'
+              )}
             小时
+            {booking.isExtended && booking.extendedDuration && booking.extendedDuration > 0 && (
+              <Text style={{ color: '#22c55e', fontSize: 24, marginLeft: 8 }}>
+                (已加钟+{booking.extendedDuration}h)
+              </Text>
+            )}
           </Text>
         </View>
         <View className={styles.infoItem}>
@@ -114,10 +120,29 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking, onCancel, onDetail, 
         </View>
       </View>
 
+      {booking.isExtended && booking.extendPrice && booking.extendPrice > 0 && (
+        <View className={styles.extendInfo}>
+          <View className={styles.extendItem}>
+            <Text className={styles.extendLabel}>原价</Text>
+            <Text className={styles.extendValue}>¥{booking.originalPrice || booking.price - booking.extendPrice}</Text>
+          </View>
+          <View className={styles.extendItem}>
+            <Text className={styles.extendLabel}>加钟费</Text>
+            <Text className={styles.extendValue} style={{ color: '#22c55e' }}>+¥{booking.extendPrice}</Text>
+          </View>
+          <View className={styles.extendDivider} />
+        </View>
+      )}
+
       <View className={styles.footer}>
         <View className={styles.price}>
           <Text>¥{booking.price}</Text>
           <Text className={styles.priceUnit}>.00</Text>
+          {booking.isExtended && booking.totalDuration && (
+            <Text style={{ fontSize: 24, color: '#64748b', marginLeft: 12, fontWeight: 400 }}>
+              共{booking.totalDuration}小时
+            </Text>
+          )}
         </View>
         <View className={styles.btnGroup} onClick={(e) => e.stopPropagation()}>
           {!booking.hasCoach && booking.status === 'confirmed' && (

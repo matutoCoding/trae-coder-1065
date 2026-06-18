@@ -288,6 +288,110 @@
   color: $color-text-primary;
 }
 
+.extendCoachToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md;
+  background-color: $color-bg-card;
+  border-radius: $radius-md;
+  margin-bottom: $spacing-md;
+  border: 2rpx solid $color-divider;
+}
+
+.extendCoachLabel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.extendCoachLabel Text:first-child {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.extendCoachDesc {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+}
+
+.extendSectionTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+}
+
+.extendConflict {
+  font-size: 20rpx;
+  color: $color-error;
+  margin-top: 4rpx;
+}
+
+.extendOption.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  background-color: $color-bg-disabled;
+  border-color: $color-divider;
+}
+
+.extendBreakdown {
+  margin-top: $spacing-md;
+  padding: $spacing-md;
+  background-color: $color-bg-card;
+  border-radius: $radius-md;
+  border: 2rpx solid $color-divider;
+}
+
+.extendBreakdownTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.extendBreakdownRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-sm;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.extendBreakdownLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.extendBreakdownValue {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.extendBreakdownUnit {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-left: $spacing-xs;
+  font-weight: $font-weight-normal;
+}
+
+.extendBreakdownTotal {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  color: $color-primary;
+}
+
+.extendBreakdownDivider {
+  height: 1rpx;
+  background-color: $color-divider;
+  margin: $spacing-sm 0;
+}
+
 .refreshHint {
   font-size: $font-size-xs;
   color: $color-text-tertiary;

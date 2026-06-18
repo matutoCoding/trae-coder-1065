@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, ScrollView } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import classnames from 'classnames';
 import dayjs from 'dayjs';
 import { useQueueStore } from '@/store/queue';
+import { courts } from '@/data/courts';
 import QueueItemCard from '@/components/QueueItem';
 import PriorityBadge from '@/components/PriorityBadge';
 import type { PriorityLevel, QueueItem } from '@/types';
@@ -18,12 +19,16 @@ const TAB_FILTERS: { key: QueueTab; label: string }[] = [
 ];
 
 const QueuePage: React.FC = () => {
+  const availableCourts = useMemo(() => courts.filter((c) => c.status === 'available'), []);
+  const [selectedCourtId, setSelectedCourtId] = useState<string>(availableCourts[0]?.id || '');
   const [activeTab, setActiveTab] = useState<QueueTab>('waiting');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const queue = useQueueStore((s) => s.queue);
-  const getSortedQueue = useQueueStore((s) => s.getSortedQueue);
-  const getWaitingCount = useQueueStore((s) => s.getWaitingCount);
+  const courtQueues = useQueueStore((s) => s.courtQueues);
+  const getSortedCourtQueue = useQueueStore((s) => s.getSortedCourtQueue);
+  const getCourtWaitingCount = useQueueStore((s) => s.getCourtWaitingCount);
+  const getCourtCurrentCalled = useQueueStore((s) => s.getCourtCurrentCalled);
+  const getCourtCurrentPlaying = useQueueStore((s) => s.getCourtCurrentPlaying);
   const joinQueue = useQueueStore((s) => s.joinQueue);
   const insertVip = useQueueStore((s) => s.insertVip);
   const insertEmergency = useQueueStore((s) => s.insertEmergency);
@@ -33,38 +38,55 @@ const QueuePage: React.FC = () => {
   const markCompleted = useQueueStore((s) => s.markCompleted);
   const leaveQueue = useQueueStore((s) => s.leaveQueue);
 
-  const sortedQueue = useMemo(() => getSortedQueue(), [queue, getSortedQueue]);
+  const selectedCourt = useMemo(
+    () => courts.find((c) => c.id === selectedCourtId),
+    [selectedCourtId]
+  );
+
+  const currentCourtQueue = useMemo(() => {
+    return courtQueues[selectedCourtId]?.items || [];
+  }, [courtQueues, selectedCourtId]);
+
+  const sortedCourtQueue = useMemo(() => {
+    return getSortedCourtQueue(selectedCourtId);
+  }, [selectedCourtId, getSortedCourtQueue, courtQueues]);
 
   const stats = useMemo(() => {
+    const queue = currentCourtQueue;
     return {
       waiting: queue.filter((q) => q.status === 'waiting').length,
       called: queue.filter((q) => q.status === 'called').length,
       playing: queue.filter((q) => q.status === 'playing').length
     };
-  }, [queue]);
+  }, [currentCourtQueue]);
 
   const currentCalled = useMemo(() => {
-    return sortedQueue.find((q) => q.status === 'called') || null;
-  }, [sortedQueue]);
+    return getCourtCurrentCalled(selectedCourtId);
+  }, [selectedCourtId, getCourtCurrentCalled, courtQueues]);
 
   const playingItem = useMemo(() => {
-    return sortedQueue.find((q) => q.status === 'playing') || null;
-  }, [sortedQueue]);
+    return getCourtCurrentPlaying(selectedCourtId);
+  }, [selectedCourtId, getCourtCurrentPlaying, courtQueues]);
 
   const filteredQueue = useMemo(() => {
     switch (activeTab) {
       case 'waiting':
-        return sortedQueue.filter((q) => q.status === 'waiting');
+        return sortedCourtQueue.filter((q) => q.status === 'waiting');
       case 'all':
-        return sortedQueue.filter(
+        return sortedCourtQueue.filter(
           (q) => q.status === 'waiting' || q.status === 'called' || q.status === 'playing'
         );
       case 'history':
-        return sortedQueue.filter((q) => q.status === 'completed');
+        return sortedCourtQueue.filter((q) => q.status === 'completed');
       default:
-        return sortedQueue;
+        return sortedCourtQueue;
     }
-  }, [sortedQueue, activeTab]);
+  }, [sortedCourtQueue, activeTab]);
+
+  const handleCourtChange = useCallback((courtId: string) => {
+    setSelectedCourtId(courtId);
+    console.log('[QueuePage] 切换场地:', courtId);
+  }, []);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -123,31 +145,36 @@ const QueuePage: React.FC = () => {
 
     let result: QueueItem;
     if (priority === 'vip') {
-      result = insertVip(input.name, input.count);
+      result = insertVip(selectedCourtId, input.name, input.count);
     } else if (priority === 'emergency') {
-      result = insertEmergency(input.name, input.count);
+      result = insertEmergency(selectedCourtId, input.name, input.count);
     } else {
-      result = joinQueue(input.name, input.count, priority);
+      result = joinQueue(selectedCourtId, input.name, input.count, priority);
     }
 
     Taro.showToast({
-      title: `取号成功 NO.${result.queueNumber}`,
+      title: `${selectedCourt?.name} NO.${result.queueNumber}`,
       icon: 'success',
       duration: 2000
     });
-    console.log('[QueuePage] 取号成功:', result.queueNumber, priority);
+    console.log(
+      '[QueuePage] 取号成功:',
+      selectedCourt?.name,
+      result.queueNumber,
+      priority
+    );
   };
 
   const handleCallNext = () => {
-    if (getWaitingCount() === 0) {
+    if (getCourtWaitingCount(selectedCourtId) === 0) {
       Taro.showToast({ title: '暂无等待人员', icon: 'none' });
       return;
     }
-    const called = callNext();
+    const called = callNext(selectedCourtId);
     if (called) {
       Taro.vibrateShort && Taro.vibrateShort({ type: 'medium' });
       Taro.showToast({
-        title: `叫号 NO.${called.queueNumber}`,
+        title: `${selectedCourt?.name} NO.${called.queueNumber}`,
         icon: 'success',
         duration: 2000
       });
@@ -155,18 +182,18 @@ const QueuePage: React.FC = () => {
   };
 
   const handleCallSpecific = (id: string) => {
-    callSpecific(id);
+    callSpecific(selectedCourtId, id);
     Taro.vibrateShort && Taro.vibrateShort({ type: 'light' });
     Taro.showToast({ title: '叫号成功', icon: 'success' });
   };
 
   const handleMarkPlaying = (id: string) => {
-    markPlaying(id);
+    markPlaying(selectedCourtId, id);
     Taro.showToast({ title: '已确认上场', icon: 'success' });
   };
 
   const handleMarkCompleted = (id: string) => {
-    markCompleted(id);
+    markCompleted(selectedCourtId, id);
     Taro.showToast({ title: '已完成离场', icon: 'success' });
   };
 
@@ -177,7 +204,7 @@ const QueuePage: React.FC = () => {
       confirmColor: '#ef4444',
       success: (res) => {
         if (res.confirm) {
-          leaveQueue(id);
+          leaveQueue(selectedCourtId, id);
           Taro.showToast({ title: '已离队', icon: 'success' });
         }
       }
@@ -186,7 +213,7 @@ const QueuePage: React.FC = () => {
 
   const getDisplayNumber = (item: QueueItem): number => {
     if (item.status !== 'waiting') return 0;
-    const waitingList = sortedQueue.filter((q) => q.status === 'waiting');
+    const waitingList = sortedCourtQueue.filter((q) => q.status === 'waiting');
     return waitingList.findIndex((q) => q.id === item.id) + 1;
   };
 
@@ -195,10 +222,36 @@ const QueuePage: React.FC = () => {
       className={styles.page}
       scrollY
       refresherEnabled
+      refresherTriggered={isRefreshing}
       onRefresherRefresh={handleRefresh}
     >
       <View className={styles.topSection}>
         <Text className={styles.pageTitle}>📢 排队叫号</Text>
+
+        <View className={styles.courtSelector}>
+          <Text className={styles.courtSelectorLabel}>选择场地</Text>
+          <ScrollView scrollX className={styles.courtTabsScroll} enhanced showScrollbar={false}>
+            <View className={styles.courtTabs}>
+              {availableCourts.map((court) => {
+                const waitingCount = getCourtWaitingCount(court.id);
+                return (
+                  <View
+                    key={court.id}
+                    className={classnames(
+                      styles.courtTab,
+                      selectedCourtId === court.id && styles.active
+                    )}
+                    onClick={() => handleCourtChange(court.id)}
+                  >
+                    <Text className={styles.courtTabName}>{court.name}</Text>
+                    <Text className={styles.courtTabBadge}>{waitingCount}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </ScrollView>
+        </View>
+
         <View className={styles.statsGrid}>
           <View className={styles.statCard}>
             <Text className={styles.statValue}>{stats.waiting}</Text>
@@ -227,7 +280,7 @@ const QueuePage: React.FC = () => {
               {currentCalled.userName} · {currentCalled.peopleCount}人
             </Text>
             <Text className={styles.currentCallTime}>
-              叫号时间：{currentCalled.calledAt ? dayjs(currentCalled.calledAt).format('HH:mm:ss') : '-'}
+              {selectedCourt?.name} · 叫号时间：{currentCalled.calledAt ? dayjs(currentCalled.calledAt).format('HH:mm:ss') : '-'}
             </Text>
           </>
         )}
@@ -237,7 +290,9 @@ const QueuePage: React.FC = () => {
             <Text className={styles.currentCallUser}>
               {playingItem.userName} · {playingItem.peopleCount}人
             </Text>
-            <Text className={styles.currentCallTime}>正在打球中</Text>
+            <Text className={styles.currentCallTime}>
+              {selectedCourt?.name} · 正在打球中
+            </Text>
           </>
         )}
         {!currentCalled && !playingItem && (
@@ -254,21 +309,21 @@ const QueuePage: React.FC = () => {
               <Text>🎾</Text>
             </View>
             <Text className={styles.actionTitle}>普通取号</Text>
-            <Text className={styles.actionDesc}>按顺序排队</Text>
+            <Text className={styles.actionDesc}>{selectedCourt?.name}</Text>
           </View>
           <View className={classnames(styles.actionCard, styles.vip)} onClick={() => handleJoinQueue('vip')}>
             <View className={classnames(styles.actionIcon, styles.vip)}>
               <Text>👑</Text>
             </View>
             <Text className={styles.actionTitle}>VIP取号</Text>
-            <Text className={styles.actionDesc}>优先插队</Text>
+            <Text className={styles.actionDesc}>{selectedCourt?.name} 优先</Text>
           </View>
           <View className={classnames(styles.actionCard, styles.emergency)} onClick={() => handleJoinQueue('emergency')}>
             <View className={classnames(styles.actionIcon, styles.emergency)}>
               <Text>⚡</Text>
             </View>
             <Text className={styles.actionTitle}>应急插队</Text>
-            <Text className={styles.actionDesc}>最高优先级</Text>
+            <Text className={styles.actionDesc}>{selectedCourt?.name} 最高</Text>
           </View>
         </View>
       </View>
@@ -277,17 +332,17 @@ const QueuePage: React.FC = () => {
         <View
           className={classnames(
             styles.callNextBtn,
-            getWaitingCount() === 0 && styles.disabled
+            getCourtWaitingCount(selectedCourtId) === 0 && styles.disabled
           )}
           onClick={handleCallNext}
         >
-          <Text>🔔 呼叫下一位</Text>
+          <Text>🔔 {selectedCourt?.name} 呼叫下一位</Text>
         </View>
       </View>
 
       <View className={styles.queueSection}>
         <View className={styles.sectionHeader}>
-          <Text className={styles.sectionTitle}>排队列表</Text>
+          <Text className={styles.sectionTitle}>{selectedCourt?.name} 排队列表</Text>
           <View className={styles.sectionCount}>
             <Text>{activeTab === 'waiting' ? stats.waiting : filteredQueue.length}人</Text>
           </View>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import classnames from 'classnames';
@@ -14,7 +14,10 @@ import {
 import { getBookedSlotsForCourt, isSlotBooked } from '@/utils/conflict';
 import CourtCard from '@/components/CourtCard';
 import TimeSlotPicker from '@/components/TimeSlot';
+import ScheduleView from '@/components/ScheduleView';
 import styles from './index.module.scss';
+
+type ViewMode = 'list' | 'schedule';
 
 const TYPE_FILTERS: { label: string; value: CourtType | 'all' }[] = [
   { label: '全部', value: 'all' },
@@ -34,10 +37,23 @@ const BookingPage: React.FC = () => {
   const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [conflictMessage, setConflictMessage] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [scheduleKey, setScheduleKey] = useState(0);
 
   const bookings = useBookingStore((s) => s.bookings);
   const addBooking = useBookingStore((s) => s.addBooking);
   const getCourtBookingsByDate = useBookingStore((s) => s.getCourtBookingsByDate);
+  const cancelBooking = useBookingStore((s) => s.cancelBooking);
+
+  const myConfirmedBookings = useMemo(
+    () =>
+      useBookingStore
+        .getState()
+        .getMyBookings()
+        .filter((b) => b.status === 'confirmed').length,
+    [bookings]
+  );
 
   const filteredCourts = useMemo(() => {
     let list = getAvailableCourts();
@@ -51,7 +67,7 @@ const BookingPage: React.FC = () => {
     if (!selectedCourt) return [];
     const courtBookings = getCourtBookingsByDate(selectedCourt.id, selectedDate);
     return getBookedSlotsForCourt(selectedCourt.id, selectedDate, courtBookings);
-  }, [selectedCourt, selectedDate, getCourtBookingsByDate]);
+  }, [selectedCourt, selectedDate, getCourtBookingsByDate, bookings]);
 
   const pastSlotIds = useMemo(() => {
     if (selectedDate !== dayjs().format('YYYY-MM-DD')) return [];
@@ -91,6 +107,7 @@ const BookingPage: React.FC = () => {
   }, [selectedSlots]);
 
   const handleSelectCourt = (court: Court) => {
+    console.log('[BookingPage] 选择场地:', court.id, court.name);
     setSelectedCourt(court);
     setSelectedSlotIds([]);
     setConflictMessage('');
@@ -150,6 +167,7 @@ const BookingPage: React.FC = () => {
         setShowBookingModal(false);
         setSelectedSlotIds([]);
         setSelectedCourt(null);
+        setScheduleKey((k) => k + 1);
         console.log('[BookingPage] 预约成功:', result.booking?.id);
       } else {
         Taro.showModal({
@@ -162,14 +180,34 @@ const BookingPage: React.FC = () => {
     }, 500);
   };
 
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleScheduleBooking = useCallback(
+    (
+      courtId: string,
+      date: string,
+      startTime: string,
+      endTime: string,
+      totalPrice: number
+    ) => {
+      console.log('[BookingPage] 排期视图预约成功:', courtId, startTime, endTime);
+      setScheduleKey((k) => k + 1);
+    },
+    []
+  );
 
   const handleRefresh = () => {
     setIsRefreshing(true);
     setTimeout(() => {
       setIsRefreshing(false);
+      setScheduleKey((k) => k + 1);
       Taro.showToast({ title: '已更新', icon: 'none' });
     }, 800);
+  };
+
+  const handleDateChange = (date: string) => {
+    console.log('[BookingPage] 切换日期:', date);
+    setSelectedDate(date);
+    setSelectedSlotIds([]);
+    setScheduleKey((k) => k + 1);
   };
 
   return (
@@ -193,9 +231,7 @@ const BookingPage: React.FC = () => {
             <Text className={styles.statLabel}>可预约</Text>
           </View>
           <View className={styles.statCard}>
-            <Text className={styles.statValue}>
-              {useBookingStore.getState().getMyBookings().filter(b => b.status === 'confirmed').length}
-            </Text>
+            <Text className={styles.statValue}>{myConfirmedBookings}</Text>
             <Text className={styles.statLabel}>我的预约</Text>
           </View>
         </View>
@@ -218,10 +254,7 @@ const BookingPage: React.FC = () => {
                     styles.dateItem,
                     selectedDate === d.date && styles.selected
                   )}
-                  onClick={() => {
-                    setSelectedDate(d.date);
-                    setSelectedSlotIds([]);
-                  }}
+                  onClick={() => handleDateChange(d.date)}
                 >
                   <Text className={styles.dateLabel}>{d.label}</Text>
                   <Text className={styles.dateWeekday}>{d.weekday}</Text>
@@ -230,41 +263,74 @@ const BookingPage: React.FC = () => {
             </View>
           </ScrollView>
 
-          <Text className={styles.filterLabel}>场地类型</Text>
-          <View className={styles.typeTabs}>
-            {TYPE_FILTERS.map((t) => (
-              <View
-                key={t.value}
-                className={classnames(
-                  styles.typeTab,
-                  selectedType === t.value && styles.active
-                )}
-                onClick={() => setSelectedType(t.value)}
-              >
-                <Text>{t.label}</Text>
+          <View className={styles.viewToggle}>
+            <View
+              className={classnames(styles.viewTab, viewMode === 'list' && styles.active)}
+              onClick={() => setViewMode('list')}
+            >
+              <Text>📋 列表视图</Text>
+            </View>
+            <View
+              className={classnames(styles.viewTab, viewMode === 'schedule' && styles.active)}
+              onClick={() => setViewMode('schedule')}
+            >
+              <Text>📅 排期视图</Text>
+            </View>
+          </View>
+
+          {viewMode === 'list' && (
+            <>
+              <Text className={styles.filterLabel}>场地类型</Text>
+              <View className={styles.typeTabs}>
+                {TYPE_FILTERS.map((t) => (
+                  <View
+                    key={t.value}
+                    className={classnames(
+                      styles.typeTab,
+                      selectedType === t.value && styles.active
+                    )}
+                    onClick={() => setSelectedType(t.value)}
+                  >
+                    <Text>{t.label}</Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
+            </>
+          )}
         </View>
       </View>
 
-      <View className={styles.courtList}>
-        <View className={styles.sectionTitle}>
-          <Text className={styles.titleText}>可选场地</Text>
-          <Text className={styles.countBadge}>共 {filteredCourts.length} 片</Text>
-        </View>
-
-        {filteredCourts.length === 0 ? (
-          <View className={styles.emptyState}>
-            <Text style={{ fontSize: '80rpx' }}>🎾</Text>
-            <Text className={styles.emptyText}>暂无符合条件的场地</Text>
+      {viewMode === 'list' ? (
+        <View className={styles.courtList}>
+          <View className={styles.sectionTitle}>
+            <Text className={styles.titleText}>可选场地</Text>
+            <Text className={styles.countBadge}>共 {filteredCourts.length} 片</Text>
           </View>
-        ) : (
-          filteredCourts.map((court) => (
-            <CourtCard key={court.id} court={court} onBook={handleSelectCourt} />
-          ))
-        )}
-      </View>
+
+          {filteredCourts.length === 0 ? (
+            <View className={styles.emptyState}>
+              <Text style={{ fontSize: '80rpx' }}>🎾</Text>
+              <Text className={styles.emptyText}>暂无符合条件的场地</Text>
+            </View>
+          ) : (
+            filteredCourts.map((court) => (
+              <CourtCard key={court.id} court={court} onBook={handleSelectCourt} />
+            ))
+          )}
+        </View>
+      ) : (
+        <View className={styles.scheduleSection}>
+          <View className={styles.sectionTitle}>
+            <Text className={styles.titleText}>排期视图 · {selectedDate}</Text>
+            <Text className={styles.countBadge}>点击空闲时段发起预约</Text>
+          </View>
+          <ScheduleView
+            key={`${selectedDate}-${scheduleKey}`}
+            selectedDate={selectedDate}
+            onBookingSubmit={handleScheduleBooking}
+          />
+        </View>
+      )}
 
       {showBookingModal && selectedCourt && (
         <View className={styles.modalOverlay} onClick={() => setShowBookingModal(false)}>

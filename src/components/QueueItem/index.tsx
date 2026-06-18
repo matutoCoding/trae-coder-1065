@@ -71,6 +71,10 @@ const QueueItemCard: React.FC<QueueItemCardProps> = ({
         <View className={styles.infoLeft}>
           <PriorityBadge priority={item.priority} label={item.priorityLabel} />
           <View className={styles.infoItem}>
+            <Text className={styles.infoLabel}>场地</Text>
+            <Text>{item.courtName}</Text>
+          </View>
+          <View className={styles.infoItem}>
             <Text className={styles.infoLabel}>人数</Text>
             <Text>{item.peopleCount}人</Text>
           </View>

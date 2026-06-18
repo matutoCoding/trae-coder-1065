@@ -1,12 +1,11 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView } from '@tarojs/components';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, Text, ScrollView, Switch } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import classnames from 'classnames';
 import dayjs from 'dayjs';
 import type { Booking, Coach } from '@/types';
 import { useBookingStore } from '@/store/booking';
 import { coaches, getAvailableCoaches } from '@/data/coaches';
-import { getMyBookings } from '@/data/bookings';
 import BookingCard from '@/components/BookingCard';
 import CoachCard from '@/components/CoachCard';
 import styles from './index.module.scss';
@@ -20,6 +19,17 @@ const FILTER_TABS: { key: BookingFilter; label: string }[] = [
   { key: 'cancelled', label: '已取消' }
 ];
 
+interface ExtendOption {
+  hours: number;
+  courtPrice: number;
+  coachPrice: number;
+  totalPrice: number;
+  courtAvailable: boolean;
+  coachAvailable: boolean;
+  coachConflictMsg?: string;
+  courtConflictMsg?: string;
+}
+
 const MyBookingsPage: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<BookingFilter>('all');
   const [showCoachModal, setShowCoachModal] = useState(false);
@@ -28,11 +38,15 @@ const MyBookingsPage: React.FC = () => {
   const [showExtendModal, setShowExtendModal] = useState(false);
   const [extendBooking, setExtendBooking] = useState<Booking | null>(null);
   const [extendHours, setExtendHours] = useState(1);
+  const [extendCoach, setExtendCoach] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const bookings = useBookingStore((s) => s.bookings);
   const cancelBooking = useBookingStore((s) => s.cancelBooking);
   const addBooking = useBookingStore((s) => s.addBooking);
+  const checkConflict = useBookingStore((s) => s.checkConflict);
+  const checkCoachAvailability = useBookingStore((s) => s.checkCoachAvailability);
+  const extendBookingFn = useBookingStore((s) => s.extendBooking);
 
   const myBookings = useMemo(() => {
     return bookings
@@ -52,6 +66,14 @@ const MyBookingsPage: React.FC = () => {
     if (activeFilter === 'all') return myBookings;
     return myBookings.filter((b) => b.status === activeFilter);
   }, [myBookings, activeFilter]);
+
+  const getHourlyPrice = useCallback((courtId: string): number => {
+    const prices: Record<string, number> = {
+      court_001: 80, court_002: 80, court_003: 120, court_004: 150,
+      court_005: 180, court_006: 180, court_007: 50, court_008: 120
+    };
+    return prices[courtId] || 80;
+  }, []);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -114,7 +136,9 @@ const MyBookingsPage: React.FC = () => {
                     hasCoach: true,
                     coachId: selectedCoach.id,
                     coachName: selectedCoach.name,
-                    price: b.price + coachFee
+                    coachPricePerHour: selectedCoach.pricePerHour,
+                    price: b.price + coachFee,
+                    originalPrice: (b.originalPrice || b.price) + coachFee
                   }
                 : b
             )
@@ -140,72 +164,117 @@ const MyBookingsPage: React.FC = () => {
       Taro.showToast({ title: '该预约已过期', icon: 'none' });
       return;
     }
-    if (dayjs(`${booking.date} ${booking.endTime}`).hour() + 1 >= 22) {
-      Taro.showToast({ title: '已达当天最晚结束时间(22:00)', icon: 'none' });
-      return;
-    }
     setExtendBooking(booking);
     setExtendHours(1);
+    setExtendCoach(booking.hasCoach);
     setShowExtendModal(true);
   };
 
-  const getExtendOptions = (booking: Booking) => {
+  const getExtendOptions = useCallback((booking: Booking): ExtendOption[] => {
     const currentEndHour = dayjs(`2000-01-01 ${booking.endTime}`).hour();
     const maxHours = Math.min(22 - currentEndHour, 3);
-    return Array.from({ length: maxHours }, (_, i) => ({
-      hours: i + 1,
-      price: getHourlyPrice(booking.courtId) * (i + 1)
-    }));
-  };
+    const courtPricePerHour = booking.pricePerHour || getHourlyPrice(booking.courtId);
+    const coachPricePerHour = booking.coachPricePerHour || 0;
 
-  const getHourlyPrice = (courtId: string): number => {
-    const court = coaches.length > 0 ? [80, 80, 120, 150, 180, 180, 50, 120] : [];
-    const idx = parseInt(courtId.replace('court_', ''), 10) - 1;
-    return court[idx] || 80;
-  };
+    const options: ExtendOption[] = [];
+
+    for (let i = 1; i <= maxHours; i++) {
+      const newStartTime = booking.endTime;
+      const endHour = currentEndHour + i;
+      const newEndTime = `${endHour.toString().padStart(2, '0')}:00`;
+
+      const courtCheck = checkConflict(
+        booking.courtId,
+        booking.date,
+        newStartTime,
+        newEndTime,
+        booking.id
+      );
+
+      let coachCheck = { available: true, message: undefined };
+      if (extendCoach && booking.hasCoach && booking.coachId) {
+        coachCheck = checkCoachAvailability(
+          booking.coachId,
+          booking.date,
+          newStartTime,
+          newEndTime,
+          booking.id
+        );
+      }
+
+      options.push({
+        hours: i,
+        courtPrice: courtPricePerHour * i,
+        coachPrice: extendCoach ? coachPricePerHour * i : 0,
+        totalPrice: courtPricePerHour * i + (extendCoach ? coachPricePerHour * i : 0),
+        courtAvailable: !courtCheck.hasConflict,
+        coachAvailable: coachCheck.available,
+        courtConflictMsg: courtCheck.message,
+        coachConflictMsg: coachCheck.message
+      });
+    }
+
+    return options;
+  }, [extendCoach, checkConflict, checkCoachAvailability, getHourlyPrice]);
+
+  const extendOptions = useMemo(() => {
+    if (!extendBooking) return [];
+    return getExtendOptions(extendBooking);
+  }, [extendBooking, getExtendOptions]);
+
+  const currentExtendOption = useMemo(() => {
+    return extendOptions.find((o) => o.hours === extendHours);
+  }, [extendOptions, extendHours]);
+
+  const canExtend = useMemo(() => {
+    if (!currentExtendOption) return false;
+    return currentExtendOption.courtAvailable && currentExtendOption.coachAvailable;
+  }, [currentExtendOption]);
 
   const handleConfirmExtend = () => {
-    if (!extendBooking) return;
-
-    const newStartTime = extendBooking.endTime;
-    const endHour = dayjs(`2000-01-01 ${extendBooking.endTime}`).hour();
-    const newEndTime = `${(endHour + extendHours).toString().padStart(2, '0')}:00`;
-    const extendPrice = getHourlyPrice(extendBooking.courtId) * extendHours;
+    if (!extendBooking || !canExtend) return;
 
     Taro.showLoading({ title: '处理中...' });
 
     setTimeout(() => {
-      const result = addBooking({
-        courtId: extendBooking.courtId,
-        courtName: extendBooking.courtName,
-        date: extendBooking.date,
-        startTime: newStartTime,
-        endTime: newEndTime,
-        userId: extendBooking.userId,
-        userName: extendBooking.userName,
-        userPhone: extendBooking.userPhone,
-        price: extendPrice,
-        status: 'confirmed',
-        hasCoach: extendBooking.hasCoach,
-        coachId: extendBooking.coachId,
-        coachName: extendBooking.coachName
-      });
+      const result = extendBookingFn(extendBooking.id, extendHours, extendCoach);
 
       Taro.hideLoading();
 
       if (result.success) {
-        Taro.showToast({ title: `加钟成功 +${extendHours}小时`, icon: 'success' });
+        Taro.showToast({
+          title: `加钟成功 +${extendHours}小时`,
+          icon: 'success',
+          duration: 2000
+        });
         setShowExtendModal(false);
         setExtendBooking(null);
-        console.log('[MyBookings] 加钟成功:', extendHours, '小时');
+        console.log(
+          '[MyBookings] 加钟成功:',
+          extendHours,
+          '小时, 场地费:',
+          result.courtExtendPrice,
+          '教练费:',
+          result.coachExtendPrice,
+          '总计:',
+          result.totalExtendPrice
+        );
       } else {
         Taro.showModal({
           title: '加钟失败',
-          content: result.message || '后续时段已被占用，请减少时长',
+          content: result.message || '无法加钟，请检查时段或减少时长',
           showCancel: false
         });
       }
     }, 500);
+  };
+
+  const getTotalDuration = (booking: Booking): number => {
+    if (booking.totalDuration) return booking.totalDuration;
+    return dayjs(`2000-01-01 ${booking.endTime}`).diff(
+      dayjs(`2000-01-01 ${booking.startTime}`),
+      'hour'
+    );
   };
 
   return (
@@ -275,7 +344,7 @@ const MyBookingsPage: React.FC = () => {
                 onDetail={handleDetail}
                 onAddCoach={handleAddCoach}
               />
-              {booking.status === 'confirmed' && !booking.hasCoach && (
+              {booking.status === 'confirmed' && (
                 <View className={styles.extendSection}>
                   <View className={styles.extendTitle}>
                     <Text>⏰ 快捷操作</Text>
@@ -340,33 +409,120 @@ const MyBookingsPage: React.FC = () => {
                 <Text>场地：{extendBooking.courtName}</Text>
                 <Text>{'\n'}</Text>
                 <Text>当前时段至：{extendBooking.endTime}</Text>
+                {extendBooking.hasCoach && (
+                  <>
+                    <Text>{'\n'}</Text>
+                    <Text>教练：{extendBooking.coachName} (¥{extendBooking.coachPricePerHour || 0}/小时)</Text>
+                  </>
+                )}
                 <Text>{'\n'}</Text>
-                <Text>请选择延长时长（最多延长到22:00）</Text>
+                <Text>当前总时长：{getTotalDuration(extendBooking)}小时 · 总费用：¥{extendBooking.price}</Text>
+              </View>
+
+              {extendBooking.hasCoach && (
+                <View className={styles.extendCoachToggle}>
+                  <View className={styles.extendCoachLabel}>
+                    <Text>同时延长教练时间</Text>
+                    <Text className={styles.extendCoachDesc}>教练将继续陪练</Text>
+                  </View>
+                  <Switch
+                    checked={extendCoach}
+                    color='#22c55e'
+                    onChange={(e) => setExtendCoach(e.detail.value)}
+                  />
+                </View>
+              )}
+
+              <View className={styles.extendSectionTitle}>
+                <Text>选择延长时长</Text>
               </View>
               <View className={styles.extendOptions}>
-                {getExtendOptions(extendBooking).map((opt) => (
-                  <View
-                    key={opt.hours}
-                    className={classnames(
-                      styles.extendOption,
-                      extendHours === opt.hours && styles.active
-                    )}
-                    onClick={() => setExtendHours(opt.hours)}
-                  >
-                    <Text className={styles.extendHours}>+{opt.hours}h</Text>
-                    <Text className={styles.extendPrice}>¥{opt.price}</Text>
-                  </View>
-                ))}
+                {extendOptions.map((opt) => {
+                  const isSelected = extendHours === opt.hours;
+                  const isAvailable = opt.courtAvailable && opt.coachAvailable;
+                  return (
+                    <View
+                      key={opt.hours}
+                      className={classnames(
+                        styles.extendOption,
+                        isSelected && styles.active,
+                        !isAvailable && styles.disabled
+                      )}
+                      onClick={() => isAvailable && setExtendHours(opt.hours)}
+                    >
+                      <Text className={styles.extendHours}>+{opt.hours}h</Text>
+                      <Text className={styles.extendPrice}>¥{opt.totalPrice}</Text>
+                      {!opt.courtAvailable && (
+                        <Text className={styles.extendConflict}>场地已满</Text>
+                      )}
+                      {opt.courtAvailable && !opt.coachAvailable && (
+                        <Text className={styles.extendConflict}>教练已满</Text>
+                      )}
+                    </View>
+                  );
+                })}
               </View>
+
+              {currentExtendOption && (
+                <View className={styles.extendBreakdown}>
+                  <View className={styles.extendBreakdownTitle}>
+                    <Text>费用明细</Text>
+                  </View>
+                  <View className={styles.extendBreakdownRow}>
+                    <Text className={styles.extendBreakdownLabel}>场地费</Text>
+                    <Text className={styles.extendBreakdownValue}>
+                      ¥{currentExtendOption.courtPrice}
+                      <Text className={styles.extendBreakdownUnit}>
+                        ({extendBooking.pricePerHour || 80}元/小时 × {extendHours}h)
+                      </Text>
+                    </Text>
+                  </View>
+                  {extendCoach && extendBooking.hasCoach && (
+                    <View className={styles.extendBreakdownRow}>
+                      <Text className={styles.extendBreakdownLabel}>教练费</Text>
+                      <Text className={styles.extendBreakdownValue}>
+                        ¥{currentExtendOption.coachPrice}
+                        <Text className={styles.extendBreakdownUnit}>
+                          ({extendBooking.coachPricePerHour || 0}元/小时 × {extendHours}h)
+                        </Text>
+                      </Text>
+                    </View>
+                  )}
+                  <View className={styles.extendBreakdownDivider} />
+                  <View className={styles.extendBreakdownRow}>
+                    <Text className={styles.extendBreakdownLabel}>加钟合计</Text>
+                    <Text className={styles.extendBreakdownTotal}>
+                      +¥{currentExtendOption.totalPrice}
+                    </Text>
+                  </View>
+                  <View className={styles.extendBreakdownRow}>
+                    <Text className={styles.extendBreakdownLabel}>加钟后总时长</Text>
+                    <Text className={styles.extendBreakdownValue}>
+                      {getTotalDuration(extendBooking) + extendHours}小时
+                    </Text>
+                  </View>
+                  <View className={styles.extendBreakdownRow}>
+                    <Text className={styles.extendBreakdownLabel}>加钟后总价</Text>
+                    <Text className={styles.extendBreakdownValue}>
+                      ¥{extendBooking.price + currentExtendOption.totalPrice}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
               <View
-                className={classnames(styles.confirmBtn)}
+                className={classnames(styles.confirmBtn, !canExtend && styles.disabled)}
                 onClick={handleConfirmExtend}
               >
-                <Text>确认加钟 ¥{getHourlyPrice(extendBooking.courtId) * extendHours}</Text>
+                <Text>
+                  {canExtend
+                    ? `确认加钟 +${extendHours}小时 · ¥${currentExtendOption?.totalPrice || 0}`
+                    : '所选时段不可用'}
+                </Text>
               </View>
             </View>
             <View className={styles.modalFooter}>
-              <Text>加钟期间如已预约教练，教练费用另行计算</Text>
+              <Text>加钟后将合并展示总时长和总价</Text>
             </View>
           </View>
         </View>

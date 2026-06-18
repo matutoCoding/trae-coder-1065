@@ -18,6 +18,71 @@
   margin-bottom: $spacing-lg;
 }
 
+.courtSelector {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.courtSelectorLabel {
+  font-size: $font-size-sm;
+  opacity: 0.9;
+}
+
+.courtTabsScroll {
+  margin-bottom: $spacing-xs;
+}
+
+.courtTabs {
+  display: flex;
+  gap: $spacing-sm;
+  @include scroll-x-container;
+}
+
+.courtTab {
+  @include scroll-x-item(auto);
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: $radius-button;
+  padding: $spacing-sm $spacing-md;
+  border: 2rpx solid transparent;
+  transition: all $transition-fast;
+  white-space: nowrap;
+
+  &.active {
+    background-color: $color-text-white;
+    border-color: $color-text-white;
+    color: $color-primary;
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+.courtTabName {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+}
+
+.courtTabBadge {
+  background-color: $color-error;
+  color: $color-text-white;
+  padding: 2rpx 12rpx;
+  border-radius: $radius-round;
+  font-size: 20rpx;
+  font-weight: $font-weight-bold;
+  min-width: 32rpx;
+  text-align: center;
+
+  .active & {
+    background-color: $color-primary;
+  }
+}
+
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
