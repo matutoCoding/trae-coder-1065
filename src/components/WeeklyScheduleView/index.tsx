@@ -5,12 +5,12 @@ import classnames from 'classnames';
 import dayjs from 'dayjs';
 import { useBookingStore } from '@/store/booking';
 import { courts } from '@/data/courts';
-import { generateTimeSlots } from '@/utils/time';
-import type { Court, Booking } from '@/types';
+import { generateTimeSlots, isTimeOverlap } from '@/utils/time';
+import type { Court, Booking, TimeSlot } from '@/types';
 import styles from './index.module.scss';
 
 interface WeeklyScheduleViewProps {
-  onDateSelect?: (courtId: string, date: string, time?: string) => void;
+  onSlotSelect?: (courtId: string, date: string, startTime: string, endTime: string) => void;
 }
 
 interface DaySlot {
@@ -21,21 +21,33 @@ interface DaySlot {
   isPast: boolean;
 }
 
-interface CourtDayStatus {
-  date: string;
+interface HourCellData {
   courtId: string;
-  totalSlots: number;
-  bookedSlots: number;
-  availableSlots: number;
-  firstAvailable: string | null;
-  bookings: Booking[];
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: 'available' | 'booked' | 'maintenance' | 'past';
+  booking?: Booking;
+  hasCoach?: boolean;
+  coachName?: string;
 }
 
-const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({ onDateSelect }) => {
+const HOURS_TO_SHOW = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];
+
+const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({ onSlotSelect }) => {
   const bookings = useBookingStore((s) => s.bookings);
   const [weekOffset, setWeekOffset] = useState(0);
-  const timeSlots = useMemo(() => generateTimeSlots(), []);
+  const [expandedCourt, setExpandedCourt] = useState<string | null>(null);
+  const [showFullHours, setShowFullHours] = useState(false);
+  const allTimeSlots = useMemo(() => generateTimeSlots(), []);
   const activeCourts = useMemo(() => courts.filter((c) => c.status === 'available'), []);
+
+  const displayTimeSlots = useMemo(() => {
+    if (showFullHours) {
+      return allTimeSlots;
+    }
+    return allTimeSlots.filter((slot) => HOURS_TO_SHOW.includes(slot.startTime));
+  }, [showFullHours, allTimeSlots]);
 
   const weekDays = useMemo((): DaySlot[] => {
     const days: DaySlot[] = [];
@@ -55,82 +67,91 @@ const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({ onDateSelect })
     return days;
   }, [weekOffset]);
 
-  const courtDayStatus = useMemo((): Map<string, CourtDayStatus> => {
-    const result = new Map<string, CourtDayStatus>();
-    const now = dayjs();
+  const getCellStatus = useCallback((
+    court: Court,
+    day: DaySlot,
+    slot: TimeSlot
+  ): HourCellData => {
+    const slotHour = parseInt(slot.startTime.split(':')[0], 10);
+    const currentHour = dayjs().hour();
+    const isPastSlot = day.isPast || (day.isToday && slotHour < currentHour);
 
-    activeCourts.forEach((court) => {
-      weekDays.forEach((day) => {
-        const key = `${court.id}_${day.date}`;
-        const dayBookings = bookings.filter(
-          (b) =>
-            b.courtId === court.id &&
-            b.date === day.date &&
-            b.status !== 'cancelled'
-        );
+    if (isPastSlot) {
+      return {
+        courtId: court.id,
+        date: day.date,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        status: 'past'
+      };
+    }
 
-        let bookedCount = 0;
-        let firstAvailable: string | null = null;
-        const currentHour = now.hour();
+    if (court.status === 'maintenance') {
+      return {
+        courtId: court.id,
+        date: day.date,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        status: 'maintenance'
+      };
+    }
 
-        timeSlots.forEach((slot, idx) => {
-          const slotHour = parseInt(slot.startTime.split(':')[0], 10);
-          const isPast = day.date === dayjs().format('YYYY-MM-DD') && slotHour < currentHour;
+    const conflictBooking = bookings.find((b) =>
+      b.courtId === court.id &&
+      b.date === day.date &&
+      b.status !== 'cancelled' &&
+      isTimeOverlap(slot.startTime, slot.endTime, b.startTime, b.endTime)
+    );
 
-          if (isPast) {
-            return;
-          }
+    if (conflictBooking) {
+      return {
+        courtId: court.id,
+        date: day.date,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        status: 'booked',
+        booking: conflictBooking,
+        hasCoach: conflictBooking.hasCoach,
+        coachName: conflictBooking.coachName
+      };
+    }
 
-          const hasConflict = dayBookings.some((b) => {
-            const bStart = parseInt(b.startTime.split(':')[0], 10);
-            const bEnd = parseInt(b.endTime.split(':')[0], 10);
-            const sStart = slotHour;
-            const sEnd = slotHour + 1;
-            return sStart < bEnd && sEnd > bStart;
-          });
+    return {
+      courtId: court.id,
+      date: day.date,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      status: 'available'
+    };
+  }, [bookings]);
 
-          if (hasConflict) {
-            bookedCount++;
-          } else if (!firstAvailable) {
-            firstAvailable = slot.startTime;
-          }
-        });
-
-        const totalAvailable = timeSlots.length -
-          (day.date === dayjs().format('YYYY-MM-DD')
-            ? Math.max(0, currentHour - 6)
-            : 0);
-
-        result.set(key, {
-          date: day.date,
-          courtId: court.id,
-          totalSlots: timeSlots.length,
-          bookedSlots: bookedCount,
-          availableSlots: totalAvailable - bookedCount,
-          firstAvailable,
-          bookings: dayBookings
-        });
+  const handleCellClick = useCallback((cell: HourCellData) => {
+    if (cell.status === 'past') {
+      Taro.showToast({ title: '该时段已过期', icon: 'none' });
+      return;
+    }
+    if (cell.status === 'maintenance') {
+      Taro.showToast({ title: '场地维护中', icon: 'none' });
+      return;
+    }
+    if (cell.status === 'booked') {
+      const userName = cell.booking?.userName || '用户';
+      const coachInfo = cell.hasCoach ? `（教练：${cell.coachName}）` : '';
+      Taro.showToast({
+        title: `已被 ${userName.charAt(0)}** 预约${coachInfo}`,
+        icon: 'none',
+        duration: 2000
       });
-    });
-
-    return result;
-  }, [bookings, weekDays, activeCourts, timeSlots]);
-
-  const handleDayClick = useCallback((court: Court, day: DaySlot) => {
-    if (day.isPast) {
-      Taro.showToast({ title: '不能选择过去的日期', icon: 'none' });
       return;
     }
 
-    const key = `${court.id}_${day.date}`;
-    const status = courtDayStatus.get(key);
+    console.log('[WeeklySchedule] 点击空闲时段:', cell.courtId, cell.date, cell.startTime);
+    onSlotSelect?.(cell.courtId, cell.date, cell.startTime, cell.endTime);
+  }, [onSlotSelect]);
 
-    if (onDateSelect) {
-      onDateSelect(court.id, day.date, status?.firstAvailable || undefined);
-    }
-
-    console.log('[WeeklySchedule] 点击:', court.name, day.date, '第一个空闲:', status?.firstAvailable);
-  }, [onDateSelect, courtDayStatus]);
+  const toggleCourtExpand = (courtId: string) => {
+    setExpandedCourt((prev) => (prev === courtId ? null : courtId));
+  };
 
   const handlePrevWeek = () => {
     if (weekOffset > 0) {
@@ -142,19 +163,21 @@ const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({ onDateSelect })
     setWeekOffset(weekOffset + 1);
   };
 
-  const getOccupancyColor = (status: CourtDayStatus, day: DaySlot): string => {
-    if (day.isPast) return 'past';
-    const ratio = status.totalSlots > 0 ? status.bookedSlots / status.totalSlots : 0;
-    if (ratio >= 0.8) return 'busy';
-    if (ratio >= 0.5) return 'moderate';
-    return 'free';
-  };
-
   const weekLabel = useMemo(() => {
     const start = weekDays[0];
     const end = weekDays[6];
     return `${start.weekday}-${end.weekday}`;
   }, [weekDays]);
+
+  const getCellStatusColor = (status: string): string => {
+    switch (status) {
+      case 'available': return 'available';
+      case 'booked': return 'booked';
+      case 'maintenance': return 'maintenance';
+      case 'past': return 'past';
+      default: return 'available';
+    }
+  };
 
   return (
     <View className={styles.weeklyContainer}>
@@ -176,23 +199,45 @@ const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({ onDateSelect })
 
       <View className={styles.legendRow}>
         <View className={styles.legendItem}>
-          <View className={classnames(styles.legendDot, styles.free)} />
-          <Text>空闲</Text>
+          <View className={classnames(styles.legendDot, styles.available)} />
+          <Text>可预约</Text>
         </View>
         <View className={styles.legendItem}>
-          <View className={classnames(styles.legendDot, styles.moderate)} />
-          <Text>适中</Text>
+          <View className={classnames(styles.legendDot, styles.booked)} />
+          <Text>已预约</Text>
         </View>
         <View className={styles.legendItem}>
-          <View className={classnames(styles.legendDot, styles.busy)} />
-          <Text>繁忙</Text>
+          <View className={classnames(styles.legendDot, styles.maintenance)} />
+          <Text>维护中</Text>
+        </View>
+        <View className={styles.legendItem}>
+          <View className={classnames(styles.legendDot, styles.past)} />
+          <Text>已过期</Text>
+        </View>
+      </View>
+
+      <View className={styles.hourToggleRow}>
+        <Text className={styles.hourToggleLabel}>时段密度</Text>
+        <View
+          className={classnames(styles.hourToggleBtn, !showFullHours && styles.active)}
+          onClick={() => setShowFullHours(false)}
+        >
+          <Text>整点时段</Text>
+        </View>
+        <View
+          className={classnames(styles.hourToggleBtn, showFullHours && styles.active)}
+          onClick={() => setShowFullHours(true)}
+        >
+          <Text>全部时段</Text>
         </View>
       </View>
 
       <ScrollView scrollX enhanced showScrollbar={false} className={styles.weeklyScroll}>
-        <View className={styles.weeklyGrid}>
-          <View className={styles.courtColHeader}>
-            <View className={styles.emptyCorner} />
+        <View className={styles.weeklyTable}>
+          <View className={styles.tableHeaderRow}>
+            <View className={styles.cornerCell}>
+              <Text className={styles.cornerText}>球场</Text>
+            </View>
             {weekDays.map((day) => (
               <View
                 key={day.date}
@@ -208,54 +253,132 @@ const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({ onDateSelect })
             ))}
           </View>
 
-          {activeCourts.map((court) => (
-            <View key={court.id} className={styles.courtRow}>
-              <View className={styles.courtNameCell}>
-                <Text className={styles.courtName}>{court.name}</Text>
-                <Text className={styles.courtType}>{court.typeLabel}</Text>
-              </View>
-              {weekDays.map((day) => {
-                const key = `${court.id}_${day.date}`;
-                const status = courtDayStatus.get(key);
-                const occupancy = status ? getOccupancyColor(status, day) : 'free';
-
-                return (
-                  <View
-                    key={key}
-                    className={classnames(
-                      styles.dayCell,
-                      day.isToday && styles.today,
-                      day.isPast && styles.past,
-                      styles[occupancy]
-                    )}
-                    onClick={() => handleDayClick(court, day)}
-                  >
-                    {status && !day.isPast && (
-                      <>
-                        <Text className={styles.availableCount}>
-                          {status.availableSlots}
-                        </Text>
-                        <Text className={styles.availableLabel}>个空时段</Text>
-                        {status.firstAvailable && (
-                          <Text className={styles.firstAvailable}>
-                            最早 {status.firstAvailable}
-                          </Text>
-                        )}
-                      </>
-                    )}
-                    {day.isPast && (
-                      <Text className={styles.pastText}>已过期</Text>
-                    )}
+          {activeCourts.map((court) => {
+            const isExpanded = expandedCourt === court.id;
+            return (
+              <View key={court.id} className={styles.courtSection}>
+                <View
+                  className={classnames(styles.courtHeaderRow, isExpanded && styles.expanded)}
+                  onClick={() => toggleCourtExpand(court.id)}
+                >
+                  <View className={styles.courtNameCell}>
+                    <Text className={styles.courtName}>{court.name}</Text>
+                    <Text className={styles.courtType}>{court.typeLabel}</Text>
                   </View>
-                );
-              })}
-            </View>
-          ))}
+                  {weekDays.map((day) => {
+                    const dayBookings = bookings.filter(
+                      (b) =>
+                        b.courtId === court.id &&
+                        b.date === day.date &&
+                        b.status !== 'cancelled'
+                    );
+                    const bookedCount = dayBookings.length;
+                    const ratio = bookedCount / displayTimeSlots.length;
+
+                    return (
+                      <View
+                        key={day.date}
+                        className={classnames(
+                          styles.daySummaryCell,
+                          day.isToday && styles.today,
+                          day.isPast && styles.past
+                        )}
+                      >
+                        {day.isPast ? (
+                          <Text className={styles.pastText}>—</Text>
+                        ) : (
+                          <>
+                            <View
+                              className={classnames(
+                                styles.occupancyBar,
+                                ratio >= 0.8 ? styles.high : ratio >= 0.5 ? styles.medium : styles.low
+                              )}
+                              style={{ width: `${Math.min(100, ratio * 100)}%` }}
+                            />
+                            <Text className={styles.summaryCount}>
+                              {bookedCount}/{displayTimeSlots.length}
+                            </Text>
+                          </>
+                        )}
+                      </View>
+                    );
+                  })}
+                  <Text className={styles.expandIcon}>
+                    {isExpanded ? '▲' : '▼'}
+                  </Text>
+                </View>
+
+                {isExpanded && (
+                  <ScrollView scrollX enhanced showScrollbar={false} className={styles.hoursScroll}>
+                    <View className={styles.hoursContainer}>
+                      <View className={styles.hourHeaderRow}>
+                        <View className={styles.hourCornerCell} />
+                        {displayTimeSlots.map((slot) => (
+                          <View key={slot.id} className={styles.hourHeaderCell}>
+                            <Text className={styles.hourText}>{slot.startTime}</Text>
+                          </View>
+                        ))}
+                      </View>
+
+                      {weekDays.map((day) => (
+                        <View key={day.date} className={styles.hourRow}>
+                          <View className={classnames(
+                            styles.hourRowLabel,
+                            day.isToday && styles.today,
+                            day.isPast && styles.past
+                          )}>
+                            <Text className={styles.hourRowText}>{day.weekday}</Text>
+                          </View>
+                          {displayTimeSlots.map((slot) => {
+                            const cell = getCellStatus(court, day, slot);
+                            const colorClass = getCellStatusColor(cell.status);
+                            return (
+                              <View
+                                key={`${day.date}-${slot.startTime}`}
+                                className={classnames(
+                                  styles.hourCell,
+                                  styles[colorClass],
+                                  day.isToday && styles.today
+                                )}
+                                onClick={() => handleCellClick(cell)}
+                              >
+                                {cell.status === 'booked' && (
+                                  <>
+                                    <Text className={styles.cellIcon}>
+                                      {cell.hasCoach ? '👨‍🏫' : '●'}
+                                    </Text>
+                                    <Text className={styles.cellUser}>
+                                      {cell.booking?.userName?.charAt(0)}**
+                                    </Text>
+                                  </>
+                                )}
+                                {cell.status === 'available' && (
+                                  <Text className={styles.cellPrice}>
+                                    ¥{court.pricePerHour}
+                                  </Text>
+                                )}
+                                {cell.status === 'maintenance' && (
+                                  <Text className={styles.cellIcon}>🔧</Text>
+                                )}
+                                {cell.status === 'past' && (
+                                  <Text className={styles.cellPast}>—</Text>
+                                )}
+                              </View>
+                            );
+                          })}
+                        </View>
+                      ))}
+                    </View>
+                  </ScrollView>
+                )}
+              </View>
+            );
+          })}
         </View>
       </ScrollView>
 
       <View className={styles.weeklyTip}>
-        <Text>💡 点击某天的球场可快速查看详情并预约</Text>
+        <Text>💡 点击球场名称展开详情，点击空闲时段可直接预约</Text>
       </View>
     </View>
   );

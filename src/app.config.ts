@@ -6,7 +6,8 @@ export default defineAppConfig({
     'pages/mine/index',
     'pages/detail/index',
     'pages/coach/index',
-    'pages/vip/index'
+    'pages/vip/index',
+    'pages/dashboard/index'
   ],
   window: {
     backgroundTextStyle: 'light',

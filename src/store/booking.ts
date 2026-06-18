@@ -46,6 +46,25 @@ interface BookingStore {
     coachExtendPrice?: number;
     totalExtendPrice?: number;
   };
+  getCourtBookingRate: (courtId: string, date: string) => { rate: number; bookedSlots: number; totalSlots: number; bookedMinutes: number };
+  getDailyRevenue: (date: string) => { total: number; courtFees: number; coachFees: number; extendFees: number; refunds: number };
+  getCoachUtilization: (coachId: string, date: string) => { rate: number; bookedMinutes: number; totalMinutes: number };
+  getDailyStats: (date: string) => {
+    courtStats: Array<{ courtId: string; courtName: string; rate: number; bookedSlots: number; totalSlots: number }>;
+    revenue: { total: number; courtFees: number; coachFees: number; extendFees: number; refunds: number };
+    coachStats: Array<{ coachId: string; coachName: string; rate: number; bookedMinutes: number }>;
+    totalBookings: number;
+  };
+  getMyFeeRecordsMonthly: (filterType?: FeeRecordType) => Array<{
+    month: string;
+    monthLabel: string;
+    totalSpent: number;
+    totalRefund: number;
+    netAmount: number;
+    count: number;
+    records: FeeRecord[];
+  }>;
+  getFeeRecordsByFilter: (filterType?: FeeRecordType, month?: string) => FeeRecord[];
 }
 
 const FEE_TYPE_LABELS: Record<FeeRecordType, string> = {
@@ -538,5 +557,205 @@ export const useBookingStore = create<BookingStore>((set, get) => ({
       coachExtendPrice,
       totalExtendPrice
     };
+  },
+
+  getCourtBookingRate: (courtId, date) => {
+    const bookings = get().getCourtBookingsByDate(courtId, date);
+    const validBookings = bookings.filter((b) => b.status !== 'cancelled');
+    
+    const OPERATING_HOURS_START = 8;
+    const OPERATING_HOURS_END = 22;
+    const totalSlots = (OPERATING_HOURS_END - OPERATING_HOURS_START) * 2;
+    
+    const bookedSlots = validBookings.reduce((count, booking) => {
+      const start = parseInt(booking.startTime.split(':')[0], 10);
+      const end = parseInt(booking.endTime.split(':')[0], 10);
+      const startMin = parseInt(booking.startTime.split(':')[1], 10);
+      const endMin = parseInt(booking.endTime.split(':')[1], 10);
+      const hours = (end - start) + (endMin - startMin) / 60;
+      return count + hours * 2;
+    }, 0);
+    
+    const bookedMinutes = validBookings.reduce((mins, booking) => {
+      const start = parseInt(booking.startTime.split(':')[0], 10) * 60 + parseInt(booking.startTime.split(':')[1], 10);
+      const end = parseInt(booking.endTime.split(':')[0], 10) * 60 + parseInt(booking.endTime.split(':')[1], 10);
+      return mins + (end - start);
+    }, 0);
+    
+    const rate = totalSlots > 0 ? Math.round((bookedSlots / totalSlots) * 100) : 0;
+    
+    return {
+      rate,
+      bookedSlots: Math.round(bookedSlots),
+      totalSlots,
+      bookedMinutes
+    };
+  },
+
+  getDailyRevenue: (date) => {
+    const feeRecords = get().feeRecords.filter((r) => dayjs(r.createdAt).format('YYYY-MM-DD') === date);
+    
+    let courtFees = 0;
+    let coachFees = 0;
+    let extendFees = 0;
+    let refunds = 0;
+    
+    feeRecords.forEach((record) => {
+      if (record.type === 'refund' || record.type === 'cancel') {
+        refunds += Math.abs(record.amount);
+      } else if (record.type === 'booking') {
+        courtFees += record.amount;
+      } else if (record.type === 'add_coach') {
+        coachFees += record.amount;
+      } else if (record.type === 'extend') {
+        extendFees += record.amount;
+      }
+    });
+    
+    const total = courtFees + coachFees + extendFees - refunds;
+    
+    return {
+      total,
+      courtFees,
+      coachFees,
+      extendFees,
+      refunds
+    };
+  },
+
+  getCoachUtilization: (coachId, date) => {
+    const bookings = get().getCoachBookingsByDate(coachId, date);
+    const validBookings = bookings.filter((b) => b.status !== 'cancelled');
+    
+    const OPERATING_HOURS_START = 8;
+    const OPERATING_HOURS_END = 22;
+    const totalMinutes = (OPERATING_HOURS_END - OPERATING_HOURS_START) * 60;
+    
+    const bookedMinutes = validBookings.reduce((mins, booking) => {
+      const start = parseInt(booking.startTime.split(':')[0], 10) * 60 + parseInt(booking.startTime.split(':')[1], 10);
+      const end = parseInt(booking.endTime.split(':')[0], 10) * 60 + parseInt(booking.endTime.split(':')[1], 10);
+      return mins + (end - start);
+    }, 0);
+    
+    const rate = totalMinutes > 0 ? Math.round((bookedMinutes / totalMinutes) * 100) : 0;
+    
+    return {
+      rate,
+      bookedMinutes,
+      totalMinutes
+    };
+  },
+
+  getDailyStats: (date) => {
+    const state = get();
+    
+    const courtStats = courts.map((court) => {
+      const { rate, bookedSlots, totalSlots } = state.getCourtBookingRate(court.id, date);
+      return {
+        courtId: court.id,
+        courtName: court.name,
+        rate,
+        bookedSlots,
+        totalSlots
+      };
+    });
+    
+    const revenue = state.getDailyRevenue(date);
+    
+    const coachStats = coaches.map((coach) => {
+      const { rate, bookedMinutes } = state.getCoachUtilization(coach.id, date);
+      return {
+        coachId: coach.id,
+        coachName: coach.name,
+        rate,
+        bookedMinutes
+      };
+    });
+    
+    const dayBookings = state.getBookingsByDate(date);
+    const totalBookings = dayBookings.filter((b) => b.status !== 'cancelled').length;
+    
+    return {
+      courtStats,
+      revenue,
+      coachStats,
+      totalBookings
+    };
+  },
+
+  getMyFeeRecordsMonthly: (filterType) => {
+    const state = get();
+    const myRecords = state.getMyFeeRecords();
+    
+    let filteredRecords = myRecords;
+    if (filterType) {
+      filteredRecords = myRecords.filter((r) => r.type === filterType);
+    }
+    
+    const monthMap = new Map<string, FeeRecord[]>();
+    
+    filteredRecords.forEach((record) => {
+      const month = dayjs(record.createdAt).format('YYYY-MM');
+      if (!monthMap.has(month)) {
+        monthMap.set(month, []);
+      }
+      monthMap.get(month)!.push(record);
+    });
+    
+    const result: Array<{
+      month: string;
+      monthLabel: string;
+      totalSpent: number;
+      totalRefund: number;
+      netAmount: number;
+      count: number;
+      records: FeeRecord[];
+    }> = [];
+    
+    const sortedMonths = Array.from(monthMap.keys()).sort().reverse();
+    
+    sortedMonths.forEach((month) => {
+      const records = monthMap.get(month)!;
+      const monthDate = dayjs(month + '-01');
+      const monthLabel = monthDate.format('YYYY年MM月');
+      
+      let totalSpent = 0;
+      let totalRefund = 0;
+      
+      records.forEach((r) => {
+        if (r.type === 'refund' || r.type === 'cancel') {
+          totalRefund += Math.abs(r.amount);
+        } else {
+          totalSpent += r.amount;
+        }
+      });
+      
+      result.push({
+        month,
+        monthLabel,
+        totalSpent,
+        totalRefund,
+        netAmount: totalSpent - totalRefund,
+        count: records.length,
+        records: records.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      });
+    });
+    
+    return result;
+  },
+
+  getFeeRecordsByFilter: (filterType, month) => {
+    const state = get();
+    let records = state.getMyFeeRecords();
+    
+    if (filterType) {
+      records = records.filter((r) => r.type === filterType);
+    }
+    
+    if (month) {
+      records = records.filter((r) => dayjs(r.createdAt).format('YYYY-MM') === month);
+    }
+    
+    return records.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 }));

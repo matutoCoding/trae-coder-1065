@@ -20,8 +20,8 @@ interface QueueStore {
     userId?: string
   ) => QueueItem;
   leaveQueue: (courtId: string, queueId: string) => void;
-  callNext: (courtId: string) => QueueItem | null;
-  callSpecific: (courtId: string, queueId: string) => void;
+  callNext: (courtId: string, expireSeconds?: number) => QueueItem | null;
+  callSpecific: (courtId: string, queueId: string, expireSeconds?: number) => void;
   markPlaying: (courtId: string, queueId: string) => void;
   markCompleted: (courtId: string, queueId: string) => void;
   markNoShow: (courtId: string, queueId: string) => void;
@@ -45,6 +45,7 @@ interface QueueStore {
   getCourtCurrentPlaying: (courtId: string) => QueueItem | null;
   getCourtNoShowList: (courtId: string) => QueueItem[];
   getAllWaitingCount: () => number;
+  getTotalNoShowCount: () => number;
 }
 
 const PRIORITY_LABELS: Record<PriorityLevel, string> = {
@@ -266,7 +267,7 @@ export const useQueueStore = create<QueueStore>((set, get) => ({
     console.log('[Queue] 离队:', courtId, queueId);
   },
 
-  callNext: (courtId) => {
+  callNext: (courtId, expireSeconds) => {
     const state = get();
     const sorted = state.getSortedCourtQueue(courtId);
     const nextItem = sorted.find((q) => q.status === 'waiting');
@@ -276,7 +277,7 @@ export const useQueueStore = create<QueueStore>((set, get) => ({
       return null;
     }
 
-    const expireSeconds = state.defaultCallExpireSeconds;
+    const expireSecs = expireSeconds || state.defaultCallExpireSeconds;
 
     set((state) => {
       const currentQueue = state.courtQueues[courtId];
@@ -292,7 +293,7 @@ export const useQueueStore = create<QueueStore>((set, get) => ({
                     ...q,
                     status: 'called' as const,
                     calledAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-                    callExpireSeconds: expireSeconds
+                    callExpireSeconds: expireSecs
                   }
                 : q
             )
@@ -308,13 +309,13 @@ export const useQueueStore = create<QueueStore>((set, get) => ({
       'NO.',
       nextItem.queueNumber,
       nextItem.userName,
-      `过期:${expireSeconds}秒`
+      `过期:${expireSecs}秒`
     );
     return get().courtQueues[courtId].items.find((q) => q.id === nextItem.id) || null;
   },
 
-  callSpecific: (courtId, queueId) => {
-    const expireSeconds = get().defaultCallExpireSeconds;
+  callSpecific: (courtId, queueId, expireSeconds) => {
+    const expireSecs = expireSeconds || get().defaultCallExpireSeconds;
     set((state) => {
       const currentQueue = state.courtQueues[courtId];
       if (!currentQueue) return state;
@@ -329,7 +330,7 @@ export const useQueueStore = create<QueueStore>((set, get) => ({
                     ...q,
                     status: 'called' as const,
                     calledAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-                    callExpireSeconds: expireSeconds
+                    callExpireSeconds: expireSecs
                   }
                 : q
             )
@@ -337,7 +338,7 @@ export const useQueueStore = create<QueueStore>((set, get) => ({
         }
       };
     });
-    console.log('[Queue] 指定叫号:', courtId, queueId);
+    console.log('[Queue] 指定叫号:', courtId, queueId, `过期:${expireSecs}秒`);
   },
 
   markPlaying: (courtId, queueId) => {
@@ -524,6 +525,14 @@ export const useQueueStore = create<QueueStore>((set, get) => ({
     const allQueues = Object.values(get().courtQueues);
     return allQueues.reduce(
       (acc, q) => acc + q.items.filter((item) => item.status === 'waiting').length,
+      0
+    );
+  },
+
+  getTotalNoShowCount: () => {
+    const allQueues = Object.values(get().courtQueues);
+    return allQueues.reduce(
+      (acc, q) => acc + q.items.filter((item) => item.status === 'no_show').length,
       0
     );
   }

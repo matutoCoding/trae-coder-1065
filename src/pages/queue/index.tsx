@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { View, Text, ScrollView } from '@tarojs/components';
+import { View, Text, ScrollView, Input } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import classnames from 'classnames';
 import dayjs from 'dayjs';
@@ -46,6 +46,18 @@ const QueuePage: React.FC = () => {
 
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [showExpirePicker, setShowExpirePicker] = useState(false);
+  const [pendingCallType, setPendingCallType] = useState<'next' | 'specific'>('next');
+  const [pendingCallId, setPendingCallId] = useState<string>('');
+  const [selectedExpireSeconds, setSelectedExpireSeconds] = useState(120);
+  const [customExpireMinutes, setCustomExpireMinutes] = useState('');
+
+  const EXPIRE_OPTIONS = [
+    { label: '1分钟', seconds: 60 },
+    { label: '2分钟', seconds: 120 },
+    { label: '5分钟', seconds: 300 },
+    { label: '自定义', seconds: -1 }
+  ];
 
   const selectedCourt = useMemo(
     () => courts.find((c) => c.id === selectedCourtId),
@@ -216,21 +228,51 @@ const QueuePage: React.FC = () => {
       Taro.showToast({ title: '暂无等待人员', icon: 'none' });
       return;
     }
-    const called = callNext(selectedCourtId);
-    if (called) {
-      Taro.vibrateShort && Taro.vibrateShort({ type: 'medium' });
-      Taro.showToast({
-        title: `${selectedCourt?.name} NO.${called.queueNumber}`,
-        icon: 'success',
-        duration: 2000
-      });
-    }
+    setPendingCallType('next');
+    setPendingCallId('');
+    setSelectedExpireSeconds(120);
+    setCustomExpireMinutes('');
+    setShowExpirePicker(true);
   };
 
   const handleCallSpecific = (id: string) => {
-    callSpecific(selectedCourtId, id);
-    Taro.vibrateShort && Taro.vibrateShort({ type: 'light' });
-    Taro.showToast({ title: '叫号成功', icon: 'success' });
+    setPendingCallType('specific');
+    setPendingCallId(id);
+    setSelectedExpireSeconds(120);
+    setCustomExpireMinutes('');
+    setShowExpirePicker(true);
+  };
+
+  const confirmCallWithExpire = () => {
+    let expireSeconds = selectedExpireSeconds;
+    if (selectedExpireSeconds === -1) {
+      const minutes = parseInt(customExpireMinutes, 10);
+      if (isNaN(minutes) || minutes < 1 || minutes > 30) {
+        Taro.showToast({ title: '请输入1-30分钟', icon: 'none' });
+        return;
+      }
+      expireSeconds = minutes * 60;
+    }
+
+    setShowExpirePicker(false);
+
+    if (pendingCallType === 'next') {
+      const called = callNext(selectedCourtId, expireSeconds);
+      if (called) {
+        Taro.vibrateShort && Taro.vibrateShort({ type: 'medium' });
+        Taro.showToast({
+          title: `${selectedCourt?.name} NO.${called.queueNumber}`,
+          icon: 'success',
+          duration: 2000
+        });
+        console.log('[QueuePage] 叫号成功，等待时间:', expireSeconds, '秒');
+      }
+    } else {
+      callSpecific(selectedCourtId, pendingCallId, expireSeconds);
+      Taro.vibrateShort && Taro.vibrateShort({ type: 'light' });
+      Taro.showToast({ title: '叫号成功', icon: 'success' });
+      console.log('[QueuePage] 指定叫号成功，等待时间:', expireSeconds, '秒');
+    }
   };
 
   const handleMarkPlaying = (id: string) => {
@@ -505,6 +547,85 @@ const QueuePage: React.FC = () => {
           )}
         </View>
       </View>
+
+      {showExpirePicker && (
+        <View className={styles.expirePickerModal} onClick={() => setShowExpirePicker(false)}>
+          <View className={styles.expirePickerContent} onClick={(e) => e.stopPropagation()}>
+            <View className={styles.expirePickerHeader}>
+              <Text className={styles.expirePickerTitle}>设置到场等待时间</Text>
+              <Text className={styles.expirePickerClose} onClick={() => setShowExpirePicker(false)}>
+                ✕
+              </Text>
+            </View>
+
+            <View className={styles.expirePickerBody}>
+              <Text className={styles.expirePickerHint}>
+                叫号后用户需在设定时间内到场确认，超时将自动过号
+              </Text>
+
+              <View className={styles.expireOptionsGrid}>
+                {EXPIRE_OPTIONS.map((option) => (
+                  <View
+                    key={option.seconds}
+                    className={classnames(
+                      styles.expireOption,
+                      selectedExpireSeconds === option.seconds && styles.expireOptionSelected
+                    )}
+                    onClick={() => {
+                      setSelectedExpireSeconds(option.seconds);
+                      if (option.seconds !== -1) {
+                        setCustomExpireMinutes('');
+                      }
+                    }}
+                  >
+                    <Text className={styles.expireOptionLabel}>{option.label}</Text>
+                    {option.seconds !== -1 && (
+                      <Text className={styles.expireOptionDesc}>
+                        {option.seconds >= 60 ? `${option.seconds / 60}分钟` : `${option.seconds}秒`}
+                      </Text>
+                    )}
+                    {selectedExpireSeconds === option.seconds && (
+                      <Text className={styles.expireOptionCheck}>✓</Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+
+              {selectedExpireSeconds === -1 && (
+                <View className={styles.customExpireSection}>
+                  <Text className={styles.customExpireLabel}>请输入等待时间（1-30分钟）</Text>
+                  <View className={styles.customExpireInput}>
+                    <Input
+                      type="number"
+                      className={styles.customExpireInputField}
+                      placeholder="请输入分钟数"
+                      value={customExpireMinutes}
+                      onInput={(e) => setCustomExpireMinutes(e.detail.value)}
+                      min="1"
+                      max="30"
+                    />
+                    <Text className={styles.customExpireUnit}>分钟</Text>
+                  </View>
+                </View>
+              )}
+
+              <View
+                className={classnames(
+                  styles.confirmExpireBtn,
+                  selectedExpireSeconds === -1 && !customExpireMinutes && styles.disabled
+                )}
+                onClick={confirmCallWithExpire}
+              >
+                <Text className={styles.confirmExpireBtnText}>
+                  确认叫号
+                  {selectedExpireSeconds !== -1 && `（${selectedExpireSeconds / 60}分钟）`}
+                  {selectedExpireSeconds === -1 && customExpireMinutes && `（${customExpireMinutes}分钟）`}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 };

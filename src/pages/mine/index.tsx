@@ -78,6 +78,10 @@ const MinePage: React.FC = () => {
     });
   };
 
+  const handleGoDashboard = () => {
+    Taro.navigateTo({ url: '/pages/dashboard/index' });
+  };
+
   return (
     <View className={styles.page}>
       <View className={styles.profileHeader}>
@@ -184,6 +188,14 @@ const MinePage: React.FC = () => {
 
         <Text className={styles.sectionTitle}>更多服务</Text>
         <View className={styles.menuGroup}>
+          <View className={styles.menuItem} onClick={handleGoDashboard}>
+            <View className={`${styles.menuIcon} ${styles.orange}`}>
+              <Text>📊</Text>
+            </View>
+            <Text className={styles.menuText}>运营中心</Text>
+            <Text className={styles.menuArrow}>›</Text>
+          </View>
+          <View className={styles.divider} />
           <View className={styles.menuItem} onClick={handleGoVip}>
             <View className={`${styles.menuIcon} ${styles.purple}`}>
               <Text>👑</Text>

@@ -1,0 +1,390 @@
+@use 'sass:math';
+@import '@/styles/variables.scss';
+
+.page {
+  min-height: 100vh;
+  padding: $spacing-md;
+  padding-bottom: calc(env(safe-area-inset-bottom) + #{$spacing-xl * 2});
+  background-color: $color-bg-page;
+}
+
+.pageTitle {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-lg;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.pageSubtitle {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-lg;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+}
+
+.statCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
+  position: relative;
+  overflow: hidden;
+  transition: all $transition-fast;
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+.statCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+}
+
+.statIcon {
+  font-size: 48rpx;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.revenue {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
+    color: $color-primary;
+  }
+
+  &.booking {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%);
+    color: $color-info;
+  }
+
+  &.queue {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%);
+    color: $color-warning;
+  }
+
+  &.coach {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0.05) 100%);
+    color: #a855f7;
+  }
+}
+
+.statLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-xs;
+}
+
+.statValue {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+
+  &.revenue {
+    color: $color-primary;
+  }
+}
+
+.statUnit {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  margin-left: $spacing-xs;
+}
+
+.statChange {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: $spacing-xs;
+}
+
+.section {
+  margin-bottom: $spacing-lg;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.sectionAction {
+  font-size: $font-size-sm;
+  color: $color-primary;
+}
+
+.courtList {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  box-shadow: $shadow-card;
+}
+
+.courtItem {
+  display: flex;
+  align-items: center;
+  padding: $spacing-md;
+  border-bottom: 1rpx solid $color-divider;
+  transition: background-color $transition-fast;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:active {
+    background-color: $color-bg-page;
+  }
+}
+
+.courtInfo {
+  flex: 1;
+}
+
+.courtName {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.courtStats {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.courtRate {
+  font-weight: $font-weight-semibold;
+}
+
+.rateBar {
+  width: 160rpx;
+  height: 12rpx;
+  background-color: $color-bg-page;
+  border-radius: 6rpx;
+  overflow: hidden;
+  margin-left: $spacing-md;
+}
+
+.rateBarFill {
+  height: 100%;
+  border-radius: 6rpx;
+  transition: width $transition-normal;
+
+  &.high {
+    background: linear-gradient(90deg, $color-success 0%, $color-success-light 100%);
+  }
+
+  &.medium {
+    background: linear-gradient(90deg, $color-warning 0%, #fcd34d 100%);
+  }
+
+  &.low {
+    background: linear-gradient(90deg, $color-danger 0%, #fca5a5 100%);
+  }
+}
+
+.arrow {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+  margin-left: $spacing-sm;
+}
+
+.revenueBreakdown {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.revenueRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-sm 0;
+  border-bottom: 1rpx solid $color-divider;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.revenueLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.revenueAmount {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+
+  &.positive {
+    color: $color-success;
+  }
+
+  &.negative {
+    color: $color-danger;
+  }
+}
+
+.quickActions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $spacing-md;
+}
+
+.quickAction {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  text-align: center;
+  box-shadow: $shadow-card;
+  transition: all $transition-fast;
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+.quickActionIcon {
+  font-size: 48rpx;
+  margin-bottom: $spacing-xs;
+}
+
+.quickActionLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.emptyState {
+  padding: $spacing-xl * 2;
+  text-align: center;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+}
+
+.emptyEmoji {
+  font-size: 80rpx;
+  margin-bottom: $spacing-md;
+}
+
+.emptyText {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+}
+
+.coachList {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  box-shadow: $shadow-card;
+}
+
+.coachItem {
+  display: flex;
+  align-items: center;
+  padding: $spacing-md;
+  border-bottom: 1rpx solid $color-divider;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.coachAvatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, $color-primary-light 0%, $color-primary 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  color: $color-text-white;
+  margin-right: $spacing-md;
+}
+
+.coachInfo {
+  flex: 1;
+}
+
+.coachName {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.coachStats {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.dateSelector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+  padding: $spacing-md;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+}
+
+.dateNavBtn {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: $radius-md;
+  background-color: $color-bg-page;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-lg;
+  color: $color-text-secondary;
+
+  &:active {
+    background-color: $color-border;
+  }
+}
+
+.dateText {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  min-width: 240rpx;
+  text-align: center;
+}
+
+.todayLabel {
+  font-size: $font-size-xs;
+  color: $color-primary;
+  background-color: rgba(16, 185, 129, 0.1);
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-sm;
+  margin-left: $spacing-sm;
+}

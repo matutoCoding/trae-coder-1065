@@ -211,8 +211,8 @@ const BookingPage: React.FC = () => {
     setScheduleKey((k) => k + 1);
   };
 
-  const handleWeeklySelect = useCallback((courtId: string, date: string) => {
-    console.log('[BookingPage] 周视图选择:', courtId, date);
+  const handleWeeklySelect = useCallback((courtId: string, date: string, startTime?: string, endTime?: string) => {
+    console.log('[BookingPage] 周视图选择:', courtId, date, startTime, endTime);
     setSelectedDate(date);
     setViewMode('schedule');
     setScheduleKey((k) => k + 1);
@@ -222,12 +222,38 @@ const BookingPage: React.FC = () => {
       setSelectedCourt(court);
     }
 
-    Taro.showToast({
-      title: '已切换到排期视图',
-      icon: 'none',
-      duration: 1000
-    });
-  }, []);
+    if (startTime && endTime) {
+      Taro.showModal({
+        title: '快速预约',
+        content: `已选择 ${court?.name || '球场'} ${date} ${startTime}-${endTime}，是否直接发起预约？`,
+        confirmText: '立即预约',
+        cancelText: '查看排期',
+        success: (res) => {
+          if (res.confirm) {
+            setSelectedCourt(court || null);
+            const slotId = `${date}_${startTime}-${endTime}`;
+            const slot = timeSlots.find((s) => s.startTime === startTime);
+            if (slot) {
+              setSelectedSlotIds([slot.id]);
+              setShowBookingModal(true);
+            }
+          } else {
+            Taro.showToast({
+              title: `已定位到 ${date} ${startTime}`,
+              icon: 'none',
+              duration: 1500
+            });
+          }
+        }
+      });
+    } else {
+      Taro.showToast({
+        title: '已切换到排期视图',
+        icon: 'none',
+        duration: 1000
+      });
+    }
+  }, [timeSlots]);
 
   return (
     <ScrollView
@@ -350,7 +376,7 @@ const BookingPage: React.FC = () => {
             <Text className={styles.countBadge}>点击某一天预约</Text>
           </View>
           <WeeklyScheduleView
-            onDateSelect={handleWeeklySelect}
+            onSlotSelect={handleWeeklySelect}
           />
         </View>
       ) : (

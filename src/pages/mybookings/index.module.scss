@@ -508,3 +508,291 @@
   margin-top: 4rpx;
   display: block;
 }
+
+.viewModeTabs {
+  display: flex;
+  background-color: $color-bg-page;
+  border-radius: $radius-lg;
+  padding: $spacing-xs;
+  margin-bottom: $spacing-lg;
+}
+
+.viewModeTab {
+  flex: 1;
+  padding: $spacing-sm;
+  text-align: center;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  transition: all $transition-fast;
+
+  &.viewModeActive {
+    background-color: $color-bg-card;
+    color: $color-primary;
+    font-weight: $font-weight-semibold;
+    box-shadow: $shadow-card;
+  }
+}
+
+.billStatsCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.billStatRow {
+  display: flex;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-md;
+}
+
+.billStatItem {
+  flex: 1;
+}
+
+.billStatLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-xs;
+}
+
+.billStatValue {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+}
+
+.refundColor {
+  color: $color-success !important;
+}
+
+.billStatNet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: $spacing-md;
+  border-top: 1rpx solid $color-divider;
+}
+
+.billStatNetValue {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-primary;
+}
+
+.monthBillCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  margin-bottom: $spacing-md;
+  overflow: hidden;
+  box-shadow: $shadow-card;
+}
+
+.monthBillHeader {
+  padding: $spacing-md;
+  transition: background-color $transition-fast;
+
+  &:active {
+    background-color: $color-bg-page;
+  }
+}
+
+.monthBillTitle {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.monthName {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.monthCount {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  background-color: $color-bg-page;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-sm;
+}
+
+.monthBillAmounts {
+  position: relative;
+}
+
+.monthAmountRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-xs 0;
+}
+
+.monthAmountLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.monthAmountValue {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.monthAmountNet {
+  font-size: $font-size-md;
+  font-weight: $font-weight-bold;
+  color: $color-primary;
+}
+
+.expandIcon {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+}
+
+.monthBillRecords {
+  border-top: 1rpx solid $color-divider;
+  background-color: $color-bg-page;
+}
+
+.billRecordItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md;
+  border-bottom: 1rpx solid $color-divider;
+  transition: background-color $transition-fast;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:active {
+    background-color: rgba(16, 185, 129, 0.05);
+  }
+}
+
+.billRecordLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-md;
+  flex: 1;
+}
+
+.billRecordIcon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: $radius-md;
+  background-color: $color-bg-card;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  flex-shrink: 0;
+}
+
+.billRecordInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.billRecordTitleRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xs;
+}
+
+.billRecordTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.billRecordTag {
+  font-size: 20rpx;
+  padding: 4rpx $spacing-xs;
+  border-radius: $radius-sm;
+  flex-shrink: 0;
+
+  &.tagcourt {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: $color-info;
+  }
+
+  &.tagcoach {
+    background-color: rgba(168, 85, 247, 0.1);
+    color: #a855f7;
+  }
+
+  &.tagextend {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: $color-warning;
+  }
+
+  &.tagrefund {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: $color-success;
+  }
+
+  &.tagdefault {
+    background-color: $color-bg-page;
+    color: $color-text-secondary;
+  }
+}
+
+.billRecordDesc {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-xs;
+}
+
+.billRecordMeta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
+}
+
+.billRecordTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.billRecordCourt {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.billRecordLink {
+  font-size: $font-size-xs;
+  color: $color-primary;
+  margin-left: auto;
+}
+
+.billRecordAmount {
+  flex-shrink: 0;
+  margin-left: $spacing-md;
+}
+
+.billAmount {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  display: block;
+  text-align: right;
+}
+
+.billPositive {
+  color: #ef4444;
+}
+
+.billNegative {
+  color: #10b981;
+}

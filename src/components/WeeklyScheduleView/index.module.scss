@@ -1,10 +1,11 @@
-@import '@/styles/variables.scss';
+@use '@/styles/variables.scss' as *;
 
 .weeklyContainer {
   background-color: $color-bg-card;
   border-radius: $radius-lg;
   padding: $spacing-md;
   margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
 }
 
 .weeklyHeader {
@@ -58,6 +59,7 @@
   justify-content: center;
   gap: $spacing-lg;
   margin-bottom: $spacing-md;
+  flex-wrap: wrap;
 }
 
 .legendItem {
@@ -73,16 +75,59 @@
   height: 20rpx;
   border-radius: 6rpx;
 
-  &.free {
+  &.available {
     background-color: #22c55e;
+    border: 1rpx solid rgba(34, 197, 94, 0.3);
   }
 
-  &.moderate {
-    background-color: #f59e0b;
-  }
-
-  &.busy {
+  &.booked {
     background-color: #ef4444;
+    border: 1rpx solid rgba(239, 68, 68, 0.3);
+  }
+
+  &.maintenance {
+    background-color: #f59e0b;
+    border: 1rpx solid rgba(245, 158, 11, 0.3);
+  }
+
+  &.past {
+    background-color: $color-bg-disabled;
+    border: 1rpx solid $color-border;
+  }
+}
+
+.hourToggleRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  background-color: $color-bg-page;
+  border-radius: $radius-md;
+}
+
+.hourToggleLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-right: $spacing-sm;
+}
+
+.hourToggleBtn {
+  flex: 1;
+  padding: $spacing-xs $spacing-sm;
+  text-align: center;
+  border-radius: $radius-sm;
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  transition: all $transition-fast;
+
+  &.active {
+    background-color: $color-primary;
+    color: $color-text-white;
+  }
+
+  &:active {
+    opacity: 0.9;
   }
 }
 
@@ -91,83 +136,107 @@
   margin-bottom: $spacing-sm;
 }
 
-.weeklyGrid {
+.weeklyTable {
   display: flex;
   flex-direction: column;
   min-width: 100%;
 }
 
-.courtColHeader {
+.tableHeaderRow {
   display: flex;
   position: sticky;
   top: 0;
-  z-index: 2;
-  background-color: $color-bg-card;
+  z-index: 10;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
+  border-radius: $radius-md $radius-md 0 0;
+  overflow: hidden;
 }
 
-.emptyCorner {
-  width: 160rpx;
+.cornerCell {
+  width: 140rpx;
+  min-width: 140rpx;
+  padding: $spacing-sm $spacing-xs;
+  border-right: 1rpx solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+}
+
+.cornerText {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-text-white;
 }
 
 .dayHeader {
   flex: 1;
-  min-width: 130rpx;
+  min-width: 120rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: $spacing-sm 0;
+  padding: $spacing-sm $spacing-xs;
   gap: 4rpx;
-  border-bottom: 2rpx solid $color-divider;
+  border-right: 1rpx solid rgba(255, 255, 255, 0.1);
 
   &.today {
-    background-color: rgba(34, 197, 94, 0.08);
+    background-color: rgba(255, 255, 255, 0.15);
   }
 
   &.past {
-    opacity: 0.5;
+    opacity: 0.6;
   }
 }
 
 .dayWeekday {
-  font-size: $font-size-sm;
-  color: $color-text-secondary;
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .today .dayWeekday {
-  color: $color-primary;
-  font-weight: $font-weight-medium;
+  color: $color-text-white;
+  font-weight: $font-weight-semibold;
 }
 
 .dayDate {
-  font-size: $font-size-lg;
-  font-weight: $font-weight-semibold;
-  color: $color-text-primary;
+  font-size: $font-size-md;
+  font-weight: $font-weight-bold;
+  color: $color-text-white;
 }
 
-.courtRow {
-  display: flex;
-  border-bottom: 1rpx solid $color-divider-light;
-
+.courtSection {
+  border-bottom: 1rpx solid $color-divider;
   &:last-child {
     border-bottom: none;
   }
 }
 
+.courtHeaderRow {
+  display: flex;
+  align-items: center;
+  padding: $spacing-sm 0;
+  transition: all $transition-fast;
+  background-color: $color-bg-card;
+
+  &.expanded {
+    background-color: $color-bg-hover;
+  }
+
+  &:active {
+    background-color: $color-bg-hover;
+  }
+}
+
 .courtNameCell {
-  width: 160rpx;
+  width: 140rpx;
+  min-width: 140rpx;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 4rpx;
-  padding: $spacing-sm 0;
-  padding-right: $spacing-sm;
-  border-right: 2rpx solid $color-divider;
-  background-color: $color-bg-card;
-  position: sticky;
-  left: 0;
-  z-index: 1;
+  padding-right: $spacing-xs;
+  border-right: 1rpx solid $color-divider;
 }
 
 .courtName {
@@ -181,73 +250,200 @@
   color: $color-text-tertiary;
 }
 
-.dayCell {
+.daySummaryCell {
   flex: 1;
-  min-width: 130rpx;
-  padding: $spacing-sm $spacing-xs;
+  min-width: 120rpx;
+  padding: $spacing-xs $spacing-xs;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4rpx;
-  transition: all $transition-fast;
-
-  &:active {
-    transform: scale(0.96);
-  }
+  gap: 6rpx;
+  position: relative;
+  border-right: 1rpx solid $color-divider-light;
 
   &.today {
     background-color: rgba(34, 197, 94, 0.05);
   }
 
   &.past {
-    background-color: $color-bg-disabled;
-  }
-
-  &.free {
-    background-color: rgba(34, 197, 94, 0.1);
-  }
-
-  &.moderate {
-    background-color: rgba(245, 158, 11, 0.1);
-  }
-
-  &.busy {
-    background-color: rgba(239, 68, 68, 0.1);
+    opacity: 0.5;
   }
 }
 
-.availableCount {
-  font-size: $font-size-xl;
-  font-weight: $font-weight-bold;
-  color: $color-text-primary;
+.occupancyBar {
+  height: 8rpx;
+  border-radius: 4rpx;
+  transition: width $transition-fast;
+
+  &.low {
+    background-color: #22c55e;
+  }
+
+  &.medium {
+    background-color: #f59e0b;
+  }
+
+  &.high {
+    background-color: #ef4444;
+  }
 }
 
-.free .availableCount {
-  color: #16a34a;
-}
-
-.moderate .availableCount {
-  color: #d97706;
-}
-
-.busy .availableCount {
-  color: #dc2626;
-}
-
-.availableLabel {
+.summaryCount {
   font-size: 20rpx;
   color: $color-text-secondary;
 }
 
-.firstAvailable {
-  font-size: 18rpx;
+.expandIcon {
+  width: 48rpx;
+  min-width: 48rpx;
+  text-align: center;
+  font-size: 20rpx;
   color: $color-text-tertiary;
-  margin-top: 4rpx;
 }
 
-.pastText {
+.hoursScroll {
+  width: 100%;
+  background-color: $color-bg-page;
+  border-top: 1rpx solid $color-divider;
+  overflow: hidden;
+}
+
+.hoursContainer {
+  display: flex;
+  flex-direction: column;
+  min-width: 100%;
+  padding: $spacing-xs;
+  gap: $spacing-xs;
+}
+
+.hourHeaderRow {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: $color-bg-card;
+  border-radius: $radius-sm;
+  overflow: hidden;
+}
+
+.hourCornerCell {
+  width: 80rpx;
+  min-width: 80rpx;
+  flex-shrink: 0;
+}
+
+.hourHeaderCell {
+  flex: 1;
+  min-width: 80rpx;
+  padding: $spacing-xs 0;
+  text-align: center;
+  border-right: 1rpx solid $color-divider-light;
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.hourText {
   font-size: 20rpx;
+  color: $color-text-tertiary;
+  font-weight: $font-weight-medium;
+}
+
+.hourRow {
+  display: flex;
+  gap: 4rpx;
+}
+
+.hourRowLabel {
+  width: 80rpx;
+  min-width: 80rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: $color-bg-card;
+  border-radius: $radius-sm;
+
+  &.today {
+    background-color: rgba(34, 197, 94, 0.1);
+  }
+
+  &.past {
+    opacity: 0.5;
+  }
+}
+
+.hourRowText {
+  font-size: 20rpx;
+  color: $color-text-secondary;
+}
+
+.today .hourRowText {
+  color: $color-primary;
+  font-weight: $font-weight-medium;
+}
+
+.hourCell {
+  flex: 1;
+  min-width: 80rpx;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rpx;
+  border-radius: $radius-sm;
+  transition: all $transition-fast;
+
+  &:active {
+    transform: scale(0.92);
+  }
+
+  &.today {
+    border: 2rpx solid rgba(34, 197, 94, 0.3);
+  }
+
+  &.available {
+    background-color: rgba(34, 197, 94, 0.12);
+    border: 2rpx solid rgba(34, 197, 94, 0.3);
+  }
+
+  &.booked {
+    background-color: rgba(239, 68, 68, 0.15);
+    border: 2rpx solid rgba(239, 68, 68, 0.3);
+  }
+
+  &.maintenance {
+    background-color: rgba(251, 191, 36, 0.15);
+    border: 2rpx solid rgba(251, 191, 36, 0.4);
+  }
+
+  &.past {
+    background-color: $color-bg-disabled;
+    border: 2rpx solid $color-border;
+    opacity: 0.6;
+  }
+}
+
+.cellIcon {
+  font-size: 24rpx;
+}
+
+.cellUser {
+  font-size: 18rpx;
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+}
+
+.cellPrice {
+  font-size: 18rpx;
+  color: $color-text-secondary;
+}
+
+.cellPast {
+  font-size: 24rpx;
   color: $color-text-tertiary;
 }
 
