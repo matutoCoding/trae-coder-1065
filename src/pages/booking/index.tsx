@@ -107,6 +107,31 @@ const BookingPage: React.FC = () => {
     }
   }, [selectedSlots]);
 
+  useEffect(() => {
+    try {
+      const navParams = Taro.getStorageSync('navParams');
+      if (navParams && navParams.from === 'dashboard') {
+        console.log('[BookingPage] 收到导航参数:', navParams);
+        if (navParams.date) {
+          const targetDate = dates.find((d) => d.date === navParams.date);
+          if (targetDate) {
+            setSelectedDate(navParams.date);
+          }
+        }
+        if (navParams.courtId) {
+          const targetCourt = filteredCourts.find((c) => c.id === navParams.courtId);
+          if (targetCourt) {
+            setSelectedCourt(targetCourt);
+            setShowBookingModal(true);
+          }
+        }
+        Taro.removeStorageSync('navParams');
+      }
+    } catch (e) {
+      console.error('[BookingPage] 读取导航参数失败:', e);
+    }
+  }, [dates, filteredCourts]);
+
   const handleSelectCourt = (court: Court) => {
     console.log('[BookingPage] 选择场地:', court.id, court.name);
     setSelectedCourt(court);

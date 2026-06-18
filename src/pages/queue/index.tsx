@@ -135,6 +135,24 @@ const QueuePage: React.FC = () => {
     }
   }, [currentCalled, selectedCourtId, checkExpiredCalls]);
 
+  useEffect(() => {
+    try {
+      const navParams = Taro.getStorageSync('navParams');
+      if (navParams && navParams.from === 'dashboard') {
+        console.log('[QueuePage] 收到导航参数:', navParams);
+        if (navParams.courtId) {
+          const targetCourt = availableCourts.find((c) => c.id === navParams.courtId);
+          if (targetCourt) {
+            setSelectedCourtId(navParams.courtId);
+          }
+        }
+        Taro.removeStorageSync('navParams');
+      }
+    } catch (e) {
+      console.error('[QueuePage] 读取导航参数失败:', e);
+    }
+  }, [availableCourts]);
+
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;

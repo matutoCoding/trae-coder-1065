@@ -11,6 +11,12 @@ export interface Court {
   status: 'available' | 'maintenance' | 'closed';
   imageUrl: string;
   tags: string[];
+  maintenanceSlots?: Array<{
+    date: string;
+    startTime: string;
+    endTime: string;
+    reason?: string;
+  }>;
 }
 
 export interface TimeSlot {

@@ -1,4 +1,8 @@
 import type { Court } from '@/types';
+import dayjs from 'dayjs';
+
+const today = dayjs().format('YYYY-MM-DD');
+const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD');
 
 export const courts: Court[] = [
   {
@@ -11,7 +15,10 @@ export const courts: Court[] = [
     description: '标准硬地网球场，配备专业照明系统',
     status: 'available',
     imageUrl: 'https://picsum.photos/id/1058/750/500',
-    tags: ['室外', '硬地', '标准尺寸']
+    tags: ['室外', '硬地', '标准尺寸'],
+    maintenanceSlots: [
+      { date: today, startTime: '12:00', endTime: '13:00', reason: '日常清洁' }
+    ]
   },
   {
     id: 'court_002',
@@ -35,7 +42,10 @@ export const courts: Court[] = [
     description: '专业红土球场，脚感舒适，适合专业训练',
     status: 'available',
     imageUrl: 'https://picsum.photos/id/1058/750/502',
-    tags: ['室外', '红土', '专业级']
+    tags: ['室外', '红土', '专业级'],
+    maintenanceSlots: [
+      { date: tomorrow, startTime: '08:00', endTime: '10:00', reason: '场地浇水养护' }
+    ]
   },
   {
     id: 'court_004',
@@ -69,9 +79,13 @@ export const courts: Court[] = [
     pricePerHour: 180,
     capacity: 4,
     description: '室内专业球场，配备休息区和更衣室',
-    status: 'maintenance',
+    status: 'available',
     imageUrl: 'https://picsum.photos/id/1058/750/505',
-    tags: ['室内', 'VIP', '含休息区']
+    tags: ['室内', 'VIP', '含休息区'],
+    maintenanceSlots: [
+      { date: today, startTime: '09:00', endTime: '12:00', reason: '设备检修' },
+      { date: today, startTime: '14:00', endTime: '16:00', reason: '地板维护' }
+    ]
   },
   {
     id: 'court_007',

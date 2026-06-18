@@ -3,28 +3,281 @@
 .page {
   min-height: 100vh;
   background-color: $color-bg-page;
+  padding: $spacing-md;
+  padding-bottom: calc(env(safe-area-inset-bottom) + #{$spacing-xl * 2});
+}
+
+.header {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  border-radius: $radius-xl;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+  color: $color-text-white;
+}
+
+.headerInfo {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: $spacing-xl * 2;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
 }
 
-.icon {
-  font-size: 160rpx;
-  margin-bottom: $spacing-xl;
-}
-
-.title {
+.courtName {
   font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-white;
+}
+
+.statusBadge {
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-sm;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+
+  &.statusConfirmed {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: $color-text-white;
+  }
+
+  &.statusCompleted {
+    background-color: rgba(255, 255, 255, 0.3);
+    color: $color-text-white;
+  }
+
+  &.statusCancelled {
+    background-color: rgba(239, 68, 68, 0.8);
+    color: $color-text-white;
+  }
+}
+
+.bookingId {
+  font-size: $font-size-xs;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.section {
+  margin-bottom: $spacing-lg;
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
   font-weight: $font-weight-semibold;
   color: $color-text-primary;
   margin-bottom: $spacing-md;
 }
 
-.desc {
+.infoCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.infoRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-sm 0;
+  border-bottom: 1rpx solid $color-divider;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.infoLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  flex-shrink: 0;
+}
+
+.infoValue {
   font-size: $font-size-md;
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+  text-align: right;
+  max-width: 60%;
+  word-break: break-all;
+}
+
+.durationText {
+  font-size: $font-size-xs;
   color: $color-text-tertiary;
+  margin-left: $spacing-xs;
+}
+
+.feeSummaryCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.feeSummaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-sm 0;
+}
+
+.feeSummaryLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.feeSummaryPaid {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-danger;
+}
+
+.feeSummaryRefund {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-success;
+}
+
+.feeSummaryDivider {
+  height: 1rpx;
+  background-color: $color-divider;
+  margin: $spacing-xs 0;
+}
+
+.feeSummaryNet {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-primary;
+}
+
+.feeRecordsList {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  box-shadow: $shadow-card;
+}
+
+.feeRecordItem {
+  display: flex;
+  align-items: center;
+  padding: $spacing-md;
+  border-bottom: 1rpx solid $color-divider;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.feeRecordIcon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: $radius-md;
+  background-color: $color-bg-page;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  flex-shrink: 0;
+  margin-right: $spacing-md;
+}
+
+.feeRecordInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.feeRecordTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.feeRecordDesc {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-xs;
+}
+
+.feeRecordTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.feeRecordAmount {
+  flex-shrink: 0;
+  margin-left: $spacing-md;
+}
+
+.feeAmount {
+  font-size: $font-size-md;
+  font-weight: $font-weight-bold;
+}
+
+.feePositive {
+  color: #ef4444;
+}
+
+.feeNegative {
+  color: #10b981;
+}
+
+.emptyFeeRecords {
+  padding: $spacing-xl;
   text-align: center;
-  line-height: $line-height-loose;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+}
+
+.emptyFeeText {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.actionSection {
+  margin-top: $spacing-lg;
+}
+
+.cancelBtn {
+  width: 100%;
+  height: 96rpx;
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 2rpx solid rgba(239, 68, 68, 0.3);
+  border-radius: $radius-lg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: #ef4444;
+  transition: all $transition-fast;
+
+  &:active {
+    background-color: rgba(239, 68, 68, 0.2);
+  }
+}
+
+.emptyState {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyIcon {
+  font-size: 120rpx;
+  margin-bottom: $spacing-lg;
+}
+
+.emptyTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+}
+
+.emptyDesc {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
 }

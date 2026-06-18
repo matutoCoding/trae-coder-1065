@@ -14,7 +14,7 @@ const DashboardPage: React.FC = () => {
 
   const getDailyStats = useBookingStore((s) => s.getDailyStats);
   const getCourtWaitingCount = useQueueStore((s) => s.getCourtWaitingCount);
-  const getTotalNoShowCount = useQueueStore((s) => s.getTotalNoShowCount);
+  const getNoShowCountByDate = useQueueStore((s) => s.getNoShowCountByDate);
   const courtQueues = useQueueStore((s) => s.courtQueues);
 
   const stats = useMemo(() => {
@@ -28,8 +28,12 @@ const DashboardPage: React.FC = () => {
   }, [getCourtWaitingCount]);
 
   const totalNoShowCount = useMemo(() => {
-    return getTotalNoShowCount();
-  }, [getTotalNoShowCount]);
+    return getNoShowCountByDate(selectedDate).total;
+  }, [selectedDate, getNoShowCountByDate]);
+
+  const noShowByCourt = useMemo(() => {
+    return getNoShowCountByDate(selectedDate).byCourt;
+  }, [selectedDate, getNoShowCountByDate]);
 
   const averageBookingRate = useMemo(() => {
     if (stats.courtStats.length === 0) return 0;
@@ -69,24 +73,24 @@ const DashboardPage: React.FC = () => {
   };
 
   const handleJumpToBooking = useCallback((courtId?: string) => {
-    const params: Record<string, string> = {};
-    if (courtId) {
-      params.courtId = courtId;
+    if (courtId || selectedDate) {
+      Taro.setStorageSync('navParams', {
+        courtId,
+        date: selectedDate,
+        from: 'dashboard'
+      });
     }
-    if (selectedDate) {
-      params.date = selectedDate;
-    }
-    const query = Object.keys(params).map((k) => `${k}=${params[k]}`).join('&');
-    Taro.navigateTo({ url: `/pages/booking/index${query ? '?' + query : ''}` });
+    Taro.switchTab({ url: '/pages/booking/index' });
   }, [selectedDate]);
 
   const handleJumpToQueue = useCallback((courtId?: string) => {
-    const params: Record<string, string> = {};
     if (courtId) {
-      params.courtId = courtId;
+      Taro.setStorageSync('navParams', {
+        courtId,
+        from: 'dashboard'
+      });
     }
-    const query = Object.keys(params).map((k) => `${k}=${params[k]}`).join('&');
-    Taro.navigateTo({ url: `/pages/queue/index${query ? '?' + query : ''}` });
+    Taro.switchTab({ url: '/pages/queue/index' });
   }, []);
 
   const handleJumpToCoach = useCallback((coachId?: string) => {
@@ -355,22 +359,27 @@ const DashboardPage: React.FC = () => {
                 onClick={() => handleJumpToQueue(court.id)}
               >
                 <View className={styles.courtInfo}>
-                  <Text className={styles.courtName}>{court.name}</Text>
-                  <View className={styles.courtStats}>
-                    <Text>
-                      {currentCalled ? (
-                        <Text style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
-                          叫号中: NO.{currentCalled.queueNumber}
+                    <Text className={styles.courtName}>{court.name}</Text>
+                    <View className={styles.courtStats}>
+                      <Text>
+                        {currentCalled ? (
+                          <Text style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                            叫号中: NO.{currentCalled.queueNumber}
+                          </Text>
+                        ) : (
+                          <Text style={{ color: 'var(--color-text-tertiary)' }}>空闲中</Text>
+                        )}
+                      </Text>
+                      <Text style={{ marginLeft: 24 }}>
+                        等待 <Text style={{ color: 'var(--color-warning)', fontWeight: 600 }}>{waiting}</Text> 人
+                      </Text>
+                      {(noShowByCourt[court.id] || 0) > 0 && (
+                        <Text style={{ marginLeft: 24 }}>
+                          过号 <Text style={{ color: 'var(--color-danger)', fontWeight: 600 }}>{noShowByCourt[court.id] || 0}</Text> 人
                         </Text>
-                      ) : (
-                        <Text style={{ color: 'var(--color-text-tertiary)' }}>空闲中</Text>
                       )}
-                    </Text>
-                    <Text style={{ marginLeft: 24 }}>
-                      等待 <Text style={{ color: 'var(--color-warning)', fontWeight: 600 }}>{waiting}</Text> 人
-                    </Text>
+                    </View>
                   </View>
-                </View>
                 <Text className={styles.arrow}>›</Text>
               </View>
             );

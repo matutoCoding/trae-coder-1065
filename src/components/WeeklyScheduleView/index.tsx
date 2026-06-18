@@ -40,7 +40,7 @@ const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({ onSlotSelect })
   const [expandedCourt, setExpandedCourt] = useState<string | null>(null);
   const [showFullHours, setShowFullHours] = useState(false);
   const allTimeSlots = useMemo(() => generateTimeSlots(), []);
-  const activeCourts = useMemo(() => courts.filter((c) => c.status === 'available'), []);
+  const activeCourts = useMemo(() => courts.filter((c) => c.status !== 'closed'), []);
 
   const displayTimeSlots = useMemo(() => {
     if (showFullHours) {
@@ -86,7 +86,11 @@ const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({ onSlotSelect })
       };
     }
 
-    if (court.status === 'maintenance') {
+    const isMaintenanceSlot = court.maintenanceSlots?.some((m) =>
+      m.date === day.date && isTimeOverlap(slot.startTime, slot.endTime, m.startTime, m.endTime)
+    );
+
+    if (isMaintenanceSlot) {
       return {
         courtId: court.id,
         date: day.date,

@@ -121,33 +121,69 @@ const generateInitialFeeRecords = (bookings: Booking[]): FeeRecord[] => {
       bookingId: booking.id,
       type: 'booking',
       typeLabel: '场地预订',
-      amount: booking.price,
-      description: booking.hasCoach
-        ? `${booking.courtName} ${booking.startTime}-${booking.endTime} ${duration}小时（含教练）`
-        : `${booking.courtName} ${booking.startTime}-${booking.endTime} ${duration}小时`,
+      amount: courtPrice,
+      description: `${booking.courtName} ${booking.startTime}-${booking.endTime} ${duration}小时`,
       createdAt: booking.createdAt,
       detail: {
         courtPrice,
-        coachPrice: coachPrice > 0 ? coachPrice : undefined,
         hours: duration
       }
     };
     records.push(bookingRecord);
 
+    if (booking.hasCoach && coachPrice > 0 && booking.coachName) {
+      const coachRecord: FeeRecord = {
+        id: generateUniqueId('fee_'),
+        bookingId: booking.id,
+        type: 'add_coach',
+        typeLabel: '添加教练',
+        amount: coachPrice,
+        description: `${booking.coachName} 陪练 ${duration}小时`,
+        createdAt: booking.createdAt,
+        detail: {
+          coachPrice,
+          hours: duration,
+          coachName: booking.coachName,
+          coachId: booking.coachId
+        }
+      };
+      records.push(coachRecord);
+    }
+
     if (booking.status === 'cancelled') {
-      const refundRecord: FeeRecord = {
+      const courtRefundRecord: FeeRecord = {
         id: generateUniqueId('fee_'),
         bookingId: booking.id,
         type: 'refund',
         typeLabel: '退款',
-        amount: -booking.price,
-        description: `${booking.courtName} 取消预约，全额退款`,
+        amount: -courtPrice,
+        description: `${booking.courtName} 场地费退款`,
         createdAt: dayjs(booking.createdAt).add(1, 'hour').format('YYYY-MM-DD HH:mm:ss'),
         detail: {
-          courtPrice: -booking.price
+          courtPrice: -courtPrice,
+          hours: duration
         }
       };
-      records.push(refundRecord);
+      records.push(courtRefundRecord);
+
+      if (coachPrice > 0 && booking.coachName) {
+        const coachRefundRecord: FeeRecord = {
+          id: generateUniqueId('fee_'),
+          bookingId: booking.id,
+          type: 'refund',
+          typeLabel: '退款',
+          amount: -coachPrice,
+          description: `${booking.coachName} 教练费退款`,
+          createdAt: dayjs(booking.createdAt).add(1, 'hour').format('YYYY-MM-DD HH:mm:ss'),
+          detail: {
+            coachPrice: -coachPrice,
+            hours: duration,
+            coachName: booking.coachName,
+            coachId: booking.coachId
+          }
+        };
+        records.push(coachRefundRecord);
+      }
     }
 
     if (booking.isExtended && booking.extendPrice) {
@@ -233,21 +269,39 @@ export const useBookingStore = create<BookingStore>((set, get) => ({
       isExtended: false
     };
 
-    const feeRecord = createFeeRecord(
+    const feeRecordsToAdd: FeeRecord[] = [];
+
+    const courtFeeRecord = createFeeRecord(
       newBooking.id,
       'booking',
-      totalPrice,
+      courtPrice,
       `${bookingData.courtName} ${bookingData.startTime}-${bookingData.endTime} ${duration}小时`,
       {
         courtPrice,
-        coachPrice: coachPrice > 0 ? coachPrice : undefined,
         hours: duration
       }
     );
+    feeRecordsToAdd.push(courtFeeRecord);
+
+    if (bookingData.hasCoach && coachPrice > 0 && bookingData.coachName) {
+      const coachFeeRecord = createFeeRecord(
+        newBooking.id,
+        'add_coach',
+        coachPrice,
+        `${bookingData.coachName} 陪练 ${duration}小时`,
+        {
+          coachPrice,
+          hours: duration,
+          coachName: bookingData.coachName,
+          coachId: bookingData.coachId
+        }
+      );
+      feeRecordsToAdd.push(coachFeeRecord);
+    }
 
     set((state) => ({
       bookings: [...state.bookings, newBooking],
-      feeRecords: [...state.feeRecords, feeRecord]
+      feeRecords: [...state.feeRecords, ...feeRecordsToAdd]
     }));
 
     console.log('[Booking] 预约成功:', newBooking.id, '费用:', totalPrice);
@@ -274,22 +328,48 @@ export const useBookingStore = create<BookingStore>((set, get) => ({
     }
 
     const refundAmount = booking.price;
+    const courtPricePerHour = booking.pricePerHour || getCourtPricePerHour(booking.courtId);
+    const duration = booking.totalDuration || calcDuration(booking.startTime, booking.endTime);
+    const courtRefund = courtPricePerHour * duration;
+    const coachRefund = booking.hasCoach && booking.coachPricePerHour
+      ? booking.coachPricePerHour * duration
+      : 0;
 
-    const feeRecord = createFeeRecord(
+    const refundRecords: FeeRecord[] = [];
+
+    const courtRefundRecord = createFeeRecord(
       bookingId,
       'refund',
-      -refundAmount,
-      `${booking.courtName} 取消预约，全额退款`,
+      -courtRefund,
+      `${booking.courtName} 场地费退款`,
       {
-        courtPrice: -booking.price
+        courtPrice: -courtRefund,
+        hours: duration
       }
     );
+    refundRecords.push(courtRefundRecord);
+
+    if (coachRefund > 0 && booking.coachName) {
+      const coachRefundRecord = createFeeRecord(
+        bookingId,
+        'refund',
+        -coachRefund,
+        `${booking.coachName} 教练费退款`,
+        {
+          coachPrice: -coachRefund,
+          hours: duration,
+          coachName: booking.coachName,
+          coachId: booking.coachId
+        }
+      );
+      refundRecords.push(coachRefundRecord);
+    }
 
     set((state) => ({
       bookings: state.bookings.map((b) =>
         b.id === bookingId ? { ...b, status: 'cancelled' as BookingStatus } : b
       ),
-      feeRecords: [...state.feeRecords, feeRecord]
+      feeRecords: [...state.feeRecords, ...refundRecords]
     }));
 
     console.log('[Booking] 取消预约成功，退款:', refundAmount, bookingId);

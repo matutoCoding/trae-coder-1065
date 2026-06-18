@@ -46,6 +46,7 @@ interface QueueStore {
   getCourtNoShowList: (courtId: string) => QueueItem[];
   getAllWaitingCount: () => number;
   getTotalNoShowCount: () => number;
+  getNoShowCountByDate: (date: string) => { total: number; byCourt: Record<string, number> };
 }
 
 const PRIORITY_LABELS: Record<PriorityLevel, string> = {
@@ -535,5 +536,27 @@ export const useQueueStore = create<QueueStore>((set, get) => ({
       (acc, q) => acc + q.items.filter((item) => item.status === 'no_show').length,
       0
     );
+  },
+
+  getNoShowCountByDate: (date) => {
+    const allQueues = Object.values(get().courtQueues);
+    let total = 0;
+    const byCourt: Record<string, number> = {};
+
+    allQueues.forEach((q) => {
+      q.items.forEach((item) => {
+        if (item.status === 'no_show' && item.noShowAt) {
+          const itemDate = dayjs(item.noShowAt).format('YYYY-MM-DD');
+          if (itemDate === date) {
+            total++;
+            if (item.courtId) {
+              byCourt[item.courtId] = (byCourt[item.courtId] || 0) + 1;
+            }
+          }
+        }
+      });
+    });
+
+    return { total, byCourt };
   }
 }));
