@@ -50,6 +50,25 @@ export interface Booking {
   isExtended?: boolean;
 }
 
+export type FeeRecordType = 'booking' | 'add_coach' | 'extend' | 'refund' | 'cancel';
+
+export interface FeeRecord {
+  id: string;
+  bookingId: string;
+  type: FeeRecordType;
+  typeLabel: string;
+  amount: number;
+  description: string;
+  createdAt: string;
+  detail?: {
+    courtPrice?: number;
+    coachPrice?: number;
+    hours?: number;
+    originalEndTime?: string;
+    newEndTime?: string;
+  };
+}
+
 export type PriorityLevel = 'normal' | 'vip' | 'emergency';
 
 export type SlotStatus = 'available' | 'booked' | 'maintenance' | 'past';
@@ -63,6 +82,9 @@ export interface ScheduleSlot {
   bookingId?: string;
   bookingUserName?: string;
   pricePerHour?: number;
+  hasCoach?: boolean;
+  coachName?: string;
+  coachId?: string;
 }
 
 export interface QueueItem {
@@ -74,11 +96,13 @@ export interface QueueItem {
   courtName: string;
   priority: PriorityLevel;
   priorityLabel: string;
-  status: 'waiting' | 'called' | 'playing' | 'completed' | 'left';
+  status: 'waiting' | 'called' | 'playing' | 'completed' | 'left' | 'no_show';
   estimatedWaitTime: number;
   peopleCount: number;
   joinedAt: string;
   calledAt?: string;
+  noShowAt?: string;
+  callExpireSeconds?: number;
 }
 
 export interface Coach {

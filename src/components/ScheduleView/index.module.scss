@@ -356,3 +356,271 @@
   color: $color-text-secondary;
   margin-bottom: $spacing-xs;
 }
+
+.coachMiniLabel {
+  font-size: 18rpx;
+  color: $color-primary;
+  margin-top: 2rpx;
+}
+
+.summaryBar {
+  flex-direction: column;
+  align-items: stretch;
+  gap: $spacing-sm;
+}
+
+.summaryInfo {
+  width: 100%;
+}
+
+.coachSection {
+  border-top: 1rpx solid $color-divider;
+  padding-top: $spacing-sm;
+}
+
+.coachSwitchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.coachLabel {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+}
+
+.coachPickerRow {
+  margin-top: $spacing-sm;
+}
+
+.selectedCoachCard {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  background-color: $color-bg-hover;
+  border-radius: $radius-md;
+  padding: $spacing-sm;
+}
+
+.coachAvatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  color: $color-text-white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-md;
+  font-weight: $font-weight-bold;
+  flex-shrink: 0;
+}
+
+.coachInfo {
+  flex: 1;
+}
+
+.coachName {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  font-weight: $font-weight-semibold;
+  display: block;
+}
+
+.coachPrice {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  margin-top: 4rpx;
+  display: block;
+}
+
+.changeCoach {
+  font-size: $font-size-xs;
+  color: $color-primary;
+  flex-shrink: 0;
+}
+
+.selectCoachBtn {
+  background-color: $color-bg-hover;
+  border-radius: $radius-md;
+  padding: $spacing-sm;
+  text-align: center;
+  border: 2rpx dashed $color-border;
+}
+
+.selectCoachText {
+  font-size: $font-size-sm;
+  color: $color-primary;
+  font-weight: $font-weight-medium;
+}
+
+.priceBreakdown {
+  border-top: 1rpx solid $color-divider;
+  padding-top: $spacing-sm;
+}
+
+.priceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-xs;
+}
+
+.priceLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.priceValue {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+}
+
+.priceRowTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: $spacing-xs;
+  padding-top: $spacing-xs;
+  border-top: 1rpx dashed $color-divider;
+}
+
+.priceLabelTotal {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  font-weight: $font-weight-semibold;
+}
+
+.priceValueTotal {
+  font-size: $font-size-xl;
+  color: $color-primary;
+  font-weight: $font-weight-bold;
+}
+
+.coachPickerModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.coachPickerContent {
+  width: 100%;
+  max-height: 80vh;
+  background-color: $color-bg-card;
+  border-radius: $radius-xl $radius-xl 0 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.coachPickerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md $spacing-lg;
+  border-bottom: 1rpx solid $color-divider;
+  flex-shrink: 0;
+}
+
+.coachPickerTitle {
+  font-size: $font-size-lg;
+  color: $color-text-primary;
+  font-weight: $font-weight-semibold;
+}
+
+.coachPickerClose {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.coachList {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-sm 0;
+}
+
+.coachOption {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-lg;
+  border-bottom: 1rpx solid $color-divider;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:active {
+    background-color: $color-bg-hover;
+  }
+}
+
+.coachOptionSelected {
+  background-color: rgba(16, 185, 129, 0.08);
+}
+
+.coachOptionDisabled {
+  opacity: 0.5;
+
+  &:active {
+    background-color: transparent;
+  }
+}
+
+.coachOptionAvatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 40rpx;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  color: $color-text-white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  flex-shrink: 0;
+}
+
+.coachOptionInfo {
+  flex: 1;
+}
+
+.coachOptionName {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  font-weight: $font-weight-semibold;
+  display: block;
+}
+
+.coachOptionLevel {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  margin-top: 4rpx;
+  display: block;
+}
+
+.coachOptionRight {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.coachOptionPrice {
+  font-size: $font-size-md;
+  color: $color-primary;
+  font-weight: $font-weight-semibold;
+  display: block;
+}
+
+.coachOptionStatus {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: 4rpx;
+  display: block;
+}

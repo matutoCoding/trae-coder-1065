@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, ScrollView } from '@tarojs/components';
+import { View, Text, ScrollView, Switch } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import classnames from 'classnames';
 import dayjs from 'dayjs';
-import type { Court, ScheduleSlot, TimeSlot } from '@/types';
+import type { Court, ScheduleSlot, TimeSlot, Coach } from '@/types';
 import { courts } from '@/data/courts';
+import { coaches, getAvailableCoaches } from '@/data/coaches';
 import { useBookingStore } from '@/store/booking';
 import { generateTimeSlots, getCurrentTimeSlotIndex } from '@/utils/time';
 import { isTimeOverlap } from '@/utils/time';
@@ -33,11 +34,16 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate, onBookingSubm
   const timeSlots = useMemo(() => generateTimeSlots(), []);
   const bookings = useBookingStore((s) => s.bookings);
   const addBooking = useBookingStore((s) => s.addBooking);
+  const checkCoachAvailability = useBookingStore((s) => s.checkCoachAvailability);
 
   const [selectedSlots, setSelectedSlots] = useState<Map<string, string[]>>(new Map());
   const [conflictMessage, setConflictMessage] = useState('');
+  const [needCoach, setNeedCoach] = useState(false);
+  const [selectedCoach, setSelectedCoach] = useState<Coach | null>(null);
+  const [showCoachPicker, setShowCoachPicker] = useState(false);
 
   const isToday = selectedDate === dayjs().format('YYYY-MM-DD');
+  const availableCoaches = useMemo(() => getAvailableCoaches(), []);
 
   const scheduleData = useMemo(() => {
     const data: Map<string, ScheduleSlot[]> = new Map();
@@ -74,7 +80,10 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate, onBookingSubm
               status: 'booked',
               bookingId: conflictBooking.id,
               bookingUserName: conflictBooking.userName,
-              pricePerHour: court.pricePerHour
+              pricePerHour: court.pricePerHour,
+              hasCoach: conflictBooking.hasCoach,
+              coachName: conflictBooking.coachName,
+              coachId: conflictBooking.coachId
             });
             return;
           }
@@ -98,7 +107,8 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate, onBookingSubm
 
   const totalSelected = useMemo(() => {
     let count = 0;
-    let price = 0;
+    let courtPrice = 0;
+    let coachPrice = 0;
     let courtId = '';
     let startTime = '';
     let endTime = '';
@@ -109,7 +119,7 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate, onBookingSubm
         count += ids.length;
         courtId = cid;
         const court = courts.find((c) => c.id === cid);
-        price += ids.length * (court?.pricePerHour || 0);
+        courtPrice += ids.length * (court?.pricePerHour || 0);
         slotIds.push(...ids);
 
         const slots = scheduleData.get(cid);
@@ -130,8 +140,14 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate, onBookingSubm
       }
     });
 
-    return { count, price, courtId, startTime, endTime, slotIds };
-  }, [selectedSlots, scheduleData]);
+    if (needCoach && selectedCoach && count > 0) {
+      coachPrice = selectedCoach.pricePerHour * count;
+    }
+
+    const totalPrice = courtPrice + coachPrice;
+
+    return { count, courtPrice, coachPrice, totalPrice, courtId, startTime, endTime, slotIds };
+  }, [selectedSlots, scheduleData, needCoach, selectedCoach]);
 
   const checkConsecutive = useCallback(
     (courtId: string, slotIds: string[]) => {
@@ -216,6 +232,10 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate, onBookingSubm
       Taro.showToast({ title: conflictMessage, icon: 'none' });
       return;
     }
+    if (needCoach && !selectedCoach) {
+      Taro.showToast({ title: '请选择教练', icon: 'none' });
+      return;
+    }
 
     Taro.showLoading({ title: '提交中...' });
 
@@ -229,9 +249,12 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate, onBookingSubm
         userId: 'user_current',
         userName: '我',
         userPhone: '138****0001',
-        price: totalSelected.price,
+        price: totalSelected.totalPrice,
         status: 'confirmed',
-        hasCoach: false
+        hasCoach: needCoach,
+        coachId: selectedCoach?.id,
+        coachName: selectedCoach?.name,
+        coachPricePerHour: selectedCoach?.pricePerHour
       });
 
       Taro.hideLoading();
@@ -240,13 +263,15 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate, onBookingSubm
         Taro.showToast({ title: '预约成功', icon: 'success' });
         setSelectedSlots(new Map());
         setConflictMessage('');
+        setNeedCoach(false);
+        setSelectedCoach(null);
         console.log('[ScheduleView] 预约成功:', result.booking?.id);
         onBookingSubmit?.(
           totalSelected.courtId,
           selectedDate,
           totalSelected.startTime,
           totalSelected.endTime,
-          totalSelected.price
+          totalSelected.totalPrice
         );
       } else {
         Taro.showModal({
@@ -257,6 +282,28 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate, onBookingSubm
         console.log('[ScheduleView] 预约失败:', result.message);
       }
     }, 500);
+  };
+
+  const handleCoachSelect = (coach: Coach) => {
+    if (totalSelected.count > 0) {
+      const available = checkCoachAvailability(
+        coach.id,
+        selectedDate,
+        totalSelected.startTime,
+        totalSelected.endTime
+      );
+      if (!available.available) {
+        Taro.showToast({
+          title: `该教练此时段不可用：${available.message}`,
+          icon: 'none',
+          duration: 2000
+        });
+        return;
+      }
+    }
+    setSelectedCoach(coach);
+    setShowCoachPicker(false);
+    console.log('[ScheduleView] 选择教练:', coach.name);
   };
 
   const activeCourts = courts.filter((c) => c.status !== 'closed');
@@ -338,10 +385,17 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate, onBookingSubm
                           <View className={styles.slotContent}>
                             {slot.status === 'booked' ? (
                               <>
-                                <View className={styles.slotStatusIcon}>🔴</View>
+                                <View className={styles.slotStatusIcon}>
+                                  {slot.hasCoach ? '�‍🏫' : '�'}
+                                </View>
                                 <Text className={styles.bookedLabel}>
                                   {slot.bookingUserName?.charAt(0)}**
                                 </Text>
+                                {slot.hasCoach && (
+                                  <Text className={styles.coachMiniLabel}>
+                                    {slot.coachName?.charAt(0)}教
+                                  </Text>
+                                )}
                               </>
                             ) : slot.status === 'maintenance' ? (
                               <>
@@ -411,12 +465,118 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ selectedDate, onBookingSubm
               {totalSelected.startTime}-{totalSelected.endTime}
             </Text>
           </View>
-          <Text className={styles.summaryPrice}>¥{totalSelected.price}</Text>
+
+          <View className={styles.coachSection}>
+            <View className={styles.coachSwitchRow}>
+              <Text className={styles.coachLabel}>需要教练</Text>
+              <Switch
+                checked={needCoach}
+                onChange={(e) => {
+                  setNeedCoach(e.detail.value);
+                  if (!e.detail.value) {
+                    setSelectedCoach(null);
+                  }
+                }}
+                color="#10b981"
+              />
+            </View>
+            {needCoach && (
+              <View className={styles.coachPickerRow}>
+                {selectedCoach ? (
+                  <View
+                    className={styles.selectedCoachCard}
+                    onClick={() => setShowCoachPicker(true)}
+                  >
+                    <View className={styles.coachAvatar}>{selectedCoach.name.charAt(0)}</View>
+                    <View className={styles.coachInfo}>
+                      <Text className={styles.coachName}>{selectedCoach.name}</Text>
+                      <Text className={styles.coachPrice}>¥{selectedCoach.pricePerHour}/小时</Text>
+                    </View>
+                    <Text className={styles.changeCoach}>更换</Text>
+                  </View>
+                ) : (
+                  <View
+                    className={styles.selectCoachBtn}
+                    onClick={() => setShowCoachPicker(true)}
+                  >
+                    <Text className={styles.selectCoachText}>选择教练</Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+
+          <View className={styles.priceBreakdown}>
+            <View className={styles.priceRow}>
+              <Text className={styles.priceLabel}>场地费</Text>
+              <Text className={styles.priceValue}>¥{totalSelected.courtPrice}</Text>
+            </View>
+            {needCoach && selectedCoach && (
+              <View className={styles.priceRow}>
+                <Text className={styles.priceLabel}>教练费</Text>
+                <Text className={styles.priceValue}>¥{totalSelected.coachPrice}</Text>
+              </View>
+            )}
+            <View className={styles.priceRowTotal}>
+              <Text className={styles.priceLabelTotal}>总计</Text>
+              <Text className={styles.priceValueTotal}>¥{totalSelected.totalPrice}</Text>
+            </View>
+          </View>
+
           <View
-            className={classnames(styles.bookBtn, conflictMessage && styles.disabled)}
+            className={classnames(styles.bookBtn, (conflictMessage || (needCoach && !selectedCoach)) && styles.disabled)}
             onClick={handleSubmit}
           >
             <Text>确认预约</Text>
+          </View>
+        </View>
+      )}
+
+      {showCoachPicker && (
+        <View className={styles.coachPickerModal} onClick={() => setShowCoachPicker(false)}>
+          <View className={styles.coachPickerContent} onClick={(e) => e.stopPropagation()}>
+            <View className={styles.coachPickerHeader}>
+              <Text className={styles.coachPickerTitle}>选择教练</Text>
+              <Text className={styles.coachPickerClose} onClick={() => setShowCoachPicker(false)}>
+                关闭
+              </Text>
+            </View>
+            <ScrollView className={styles.coachList} scrollY>
+              {availableCoaches.map((coach) => {
+                const coachAvailable =
+                  totalSelected.count > 0
+                    ? checkCoachAvailability(
+                        coach.id,
+                        selectedDate,
+                        totalSelected.startTime,
+                        totalSelected.endTime
+                      ).available
+                    : true;
+                return (
+                  <View
+                    key={coach.id}
+                    className={classnames(
+                      styles.coachOption,
+                      selectedCoach?.id === coach.id && styles.coachOptionSelected,
+                      !coachAvailable && styles.coachOptionDisabled
+                    )}
+                    onClick={() => coachAvailable && handleCoachSelect(coach)}
+                  >
+                    <View className={styles.coachOptionAvatar}>{coach.name.charAt(0)}</View>
+                    <View className={styles.coachOptionInfo}>
+                      <Text className={styles.coachOptionName}>{coach.name}</Text>
+                      <Text className={styles.coachOptionLevel}>{coach.level}</Text>
+                    </View>
+                    <View className={styles.coachOptionRight}>
+                      <Text className={styles.coachOptionPrice}>¥{coach.pricePerHour}/小时</Text>
+                      {!coachAvailable && (
+                        <Text className={styles.coachOptionStatus}>时段不可用</Text>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
           </View>
         </View>
       )}

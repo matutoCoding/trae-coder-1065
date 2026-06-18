@@ -13,6 +13,8 @@ interface QueueItemCardProps {
   onMarkPlaying?: (id: string) => void;
   onMarkCompleted?: (id: string) => void;
   onLeave?: (id: string) => void;
+  onRestore?: (id: string) => void;
+  onMarkNoShow?: (id: string) => void;
   showActions?: boolean;
 }
 
@@ -21,7 +23,8 @@ const statusLabels: Record<QueueItem['status'], string> = {
   called: '已叫号',
   playing: '上场中',
   completed: '已完成',
-  left: '已离队'
+  left: '已离队',
+  no_show: '已过号'
 };
 
 const QueueItemCard: React.FC<QueueItemCardProps> = ({
@@ -31,6 +34,8 @@ const QueueItemCard: React.FC<QueueItemCardProps> = ({
   onMarkPlaying,
   onMarkCompleted,
   onLeave,
+  onRestore,
+  onMarkNoShow,
   showActions = true
 }) => {
   const isAdmin = true;
@@ -136,6 +141,14 @@ const QueueItemCard: React.FC<QueueItemCardProps> = ({
               onClick={() => onMarkCompleted?.(item.id)}
             >
               <Text>完成离场</Text>
+            </View>
+          )}
+          {item.status === 'no_show' && (
+            <View
+              className={classnames(styles.btn, styles.success)}
+              onClick={() => onRestore?.(item.id)}
+            >
+              <Text>恢复排队</Text>
             </View>
           )}
         </View>

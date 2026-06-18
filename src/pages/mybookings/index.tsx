@@ -40,6 +40,7 @@ const MyBookingsPage: React.FC = () => {
   const [extendHours, setExtendHours] = useState(1);
   const [extendCoach, setExtendCoach] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null);
 
   const bookings = useBookingStore((s) => s.bookings);
   const cancelBooking = useBookingStore((s) => s.cancelBooking);
@@ -47,6 +48,8 @@ const MyBookingsPage: React.FC = () => {
   const checkConflict = useBookingStore((s) => s.checkConflict);
   const checkCoachAvailability = useBookingStore((s) => s.checkCoachAvailability);
   const extendBookingFn = useBookingStore((s) => s.extendBooking);
+  const addCoachToBooking = useBookingStore((s) => s.addCoachToBooking);
+  const getFeeRecordsByBooking = useBookingStore((s) => s.getFeeRecordsByBooking);
 
   const myBookings = useMemo(() => {
     return bookings
@@ -99,6 +102,36 @@ const MyBookingsPage: React.FC = () => {
     });
   };
 
+  const toggleFeeRecords = (bookingId: string) => {
+    setExpandedBookingId((prev) => (prev === bookingId ? null : bookingId));
+  };
+
+  const getFeeRecordTypeLabel = (type: string): string => {
+    const labels: Record<string, string> = {
+      booking: '场地预订',
+      add_coach: '添加教练',
+      extend: '加钟',
+      refund: '退款',
+      cancel: '取消',
+      discount: '优惠',
+      other: '其他'
+    };
+    return labels[type] || type;
+  };
+
+  const getFeeRecordIcon = (type: string): string => {
+    const icons: Record<string, string> = {
+      booking: '🎾',
+      add_coach: '👨‍🏫',
+      extend: '⏰',
+      refund: '↩️',
+      cancel: '❌',
+      discount: '🎁',
+      other: '📝'
+    };
+    return icons[type] || '📝';
+  };
+
   const handleAddCoach = (booking: Booking) => {
     if (booking.hasCoach) {
       Taro.showToast({ title: '该预约已预约教练', icon: 'none' });
@@ -122,33 +155,20 @@ const MyBookingsPage: React.FC = () => {
       confirmColor: '#22c55e',
       success: (res) => {
         if (res.confirm) {
-          const duration = dayjs(`2000-01-01 ${currentBooking.endTime}`).diff(
-            dayjs(`2000-01-01 ${currentBooking.startTime}`),
-            'hour'
+          const result = addCoachToBooking(
+            currentBooking.id,
+            selectedCoach.id,
+            selectedCoach.name
           );
-          const coachFee = selectedCoach.pricePerHour * duration;
-
-          useBookingStore.setState((state) => ({
-            bookings: state.bookings.map((b) =>
-              b.id === currentBooking.id
-                ? {
-                    ...b,
-                    hasCoach: true,
-                    coachId: selectedCoach.id,
-                    coachName: selectedCoach.name,
-                    coachPricePerHour: selectedCoach.pricePerHour,
-                    price: b.price + coachFee,
-                    originalPrice: (b.originalPrice || b.price) + coachFee
-                  }
-                : b
-            )
-          }));
-
-          Taro.showToast({ title: '添加成功', icon: 'success' });
-          setShowCoachModal(false);
-          setCurrentBooking(null);
-          setSelectedCoach(null);
-          console.log('[MyBookings] 添加教练成功:', selectedCoach.name, '费用:', coachFee);
+          if (result.success) {
+            Taro.showToast({ title: '添加成功', icon: 'success' });
+            setShowCoachModal(false);
+            setCurrentBooking(null);
+            setSelectedCoach(null);
+            console.log('[MyBookings] 添加教练成功:', selectedCoach.name, '费用:', result.coachFee);
+          } else {
+            Taro.showToast({ title: result.message || '添加失败', icon: 'none' });
+          }
         }
       }
     });
@@ -336,15 +356,67 @@ const MyBookingsPage: React.FC = () => {
             </View>
           </View>
         ) : (
-          filteredBookings.map((booking) => (
-            <View key={booking.id}>
-              <BookingCard
-                booking={booking}
-                onCancel={handleCancel}
-                onDetail={handleDetail}
-                onAddCoach={handleAddCoach}
-              />
-              {booking.status === 'confirmed' && (
+          filteredBookings.map((booking) => {
+            const feeRecords = getFeeRecordsByBooking(booking.id);
+            const isExpanded = expandedBookingId === booking.id;
+            return (
+              <View key={booking.id}>
+                <BookingCard
+                  booking={booking}
+                  onCancel={handleCancel}
+                  onDetail={handleDetail}
+                  onAddCoach={handleAddCoach}
+                />
+                {feeRecords.length > 0 && (
+                  <View className={styles.feeRecordsSection}>
+                    <View
+                      className={styles.feeRecordsHeader}
+                      onClick={() => toggleFeeRecords(booking.id)}
+                    >
+                      <Text className={styles.feeRecordsTitle}>
+                        💰 费用明细 ({feeRecords.length}条)
+                      </Text>
+                      <Text className={styles.feeRecordsToggle}>
+                        {isExpanded ? '收起 ↑' : '展开 ↓'}
+                      </Text>
+                    </View>
+                    {isExpanded && (
+                      <View className={styles.feeRecordsList}>
+                        {feeRecords.map((record) => (
+                          <View key={record.id} className={styles.feeRecordItem}>
+                            <View className={styles.feeRecordIcon}>
+                              {getFeeRecordIcon(record.type)}
+                            </View>
+                            <View className={styles.feeRecordInfo}>
+                              <Text className={styles.feeRecordTitle}>
+                                {getFeeRecordTypeLabel(record.type)}
+                              </Text>
+                              {record.description && (
+                                <Text className={styles.feeRecordDesc}>
+                                  {record.description}
+                                </Text>
+                              )}
+                              <Text className={styles.feeRecordTime}>
+                                {dayjs(record.createdAt).format('MM-DD HH:mm')}
+                              </Text>
+                            </View>
+                            <View className={styles.feeRecordAmount}>
+                              <Text
+                                className={classnames(
+                                  styles.feeAmount,
+                                  record.amount >= 0 ? styles.feePositive : styles.feeNegative
+                                )}
+                              >
+                                {record.amount >= 0 ? '+' : '-'}¥{Math.abs(record.amount)}
+                              </Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                )}
+                {booking.status === 'confirmed' && (
                 <View className={styles.extendSection}>
                   <View className={styles.extendTitle}>
                     <Text>⏰ 快捷操作</Text>

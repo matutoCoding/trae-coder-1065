@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { View, Text, ScrollView } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import classnames from 'classnames';
@@ -10,11 +10,12 @@ import PriorityBadge from '@/components/PriorityBadge';
 import type { PriorityLevel, QueueItem } from '@/types';
 import styles from './index.module.scss';
 
-type QueueTab = 'waiting' | 'all' | 'history';
+type QueueTab = 'waiting' | 'all' | 'no_show' | 'history';
 
 const TAB_FILTERS: { key: QueueTab; label: string }[] = [
   { key: 'waiting', label: '等待中' },
   { key: 'all', label: '全部' },
+  { key: 'no_show', label: '过号' },
   { key: 'history', label: '已完成' }
 ];
 
@@ -29,6 +30,8 @@ const QueuePage: React.FC = () => {
   const getCourtWaitingCount = useQueueStore((s) => s.getCourtWaitingCount);
   const getCourtCurrentCalled = useQueueStore((s) => s.getCourtCurrentCalled);
   const getCourtCurrentPlaying = useQueueStore((s) => s.getCourtCurrentPlaying);
+  const getCourtNoShowList = useQueueStore((s) => s.getCourtNoShowList);
+  const defaultCallExpireSeconds = useQueueStore((s) => s.defaultCallExpireSeconds);
   const joinQueue = useQueueStore((s) => s.joinQueue);
   const insertVip = useQueueStore((s) => s.insertVip);
   const insertEmergency = useQueueStore((s) => s.insertEmergency);
@@ -36,7 +39,13 @@ const QueuePage: React.FC = () => {
   const callSpecific = useQueueStore((s) => s.callSpecific);
   const markPlaying = useQueueStore((s) => s.markPlaying);
   const markCompleted = useQueueStore((s) => s.markCompleted);
+  const markNoShow = useQueueStore((s) => s.markNoShow);
+  const restoreNoShow = useQueueStore((s) => s.restoreNoShow);
+  const checkExpiredCalls = useQueueStore((s) => s.checkExpiredCalls);
   const leaveQueue = useQueueStore((s) => s.leaveQueue);
+
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const selectedCourt = useMemo(
     () => courts.find((c) => c.id === selectedCourtId),
@@ -76,12 +85,49 @@ const QueuePage: React.FC = () => {
         return sortedCourtQueue.filter(
           (q) => q.status === 'waiting' || q.status === 'called' || q.status === 'playing'
         );
+      case 'no_show':
+        return getCourtNoShowList(selectedCourtId);
       case 'history':
-        return sortedCourtQueue.filter((q) => q.status === 'completed');
+        return sortedCourtQueue.filter((q) => q.status === 'completed' || q.status === 'no_show');
       default:
         return sortedCourtQueue;
     }
-  }, [sortedCourtQueue, activeTab]);
+  }, [sortedCourtQueue, activeTab, selectedCourtId, getCourtNoShowList]);
+
+  useEffect(() => {
+    if (currentCalled && currentCalled.calledAt && currentCalled.callExpireSeconds) {
+      const updateRemaining = () => {
+        const calledTime = dayjs(currentCalled.calledAt);
+        const expireTime = calledTime.add(currentCalled.callExpireSeconds, 'second');
+        const remaining = Math.max(0, expireTime.diff(dayjs(), 'second'));
+        setRemainingSeconds(remaining);
+
+        if (remaining <= 0) {
+          checkExpiredCalls(selectedCourtId);
+        }
+      };
+
+      updateRemaining();
+      timerRef.current = setInterval(updateRemaining, 1000);
+
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+      };
+    } else {
+      setRemainingSeconds(0);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    }
+  }, [currentCalled, selectedCourtId, checkExpiredCalls]);
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleCourtChange = useCallback((courtId: string) => {
     setSelectedCourtId(courtId);
@@ -211,6 +257,34 @@ const QueuePage: React.FC = () => {
     });
   };
 
+  const handleMarkNoShow = (id: string) => {
+    Taro.showModal({
+      title: '标记过号',
+      content: '确定要标记该用户为过号吗？',
+      confirmColor: '#ef4444',
+      success: (res) => {
+        if (res.confirm) {
+          markNoShow(selectedCourtId, id);
+          Taro.showToast({ title: '已标记过号', icon: 'success' });
+        }
+      }
+    });
+  };
+
+  const handleRestoreNoShow = (id: string) => {
+    Taro.showModal({
+      title: '恢复排队',
+      content: '确定要将该用户恢复到等待队列吗？恢复后按优先级重新排序。',
+      confirmColor: '#22c55e',
+      success: (res) => {
+        if (res.confirm) {
+          restoreNoShow(selectedCourtId, id);
+          Taro.showToast({ title: '已恢复排队', icon: 'success' });
+        }
+      }
+    });
+  };
+
   const getDisplayNumber = (item: QueueItem): number => {
     if (item.status !== 'waiting') return 0;
     const waitingList = sortedCourtQueue.filter((q) => q.status === 'waiting');
@@ -282,6 +356,29 @@ const QueuePage: React.FC = () => {
             <Text className={styles.currentCallTime}>
               {selectedCourt?.name} · 叫号时间：{currentCalled.calledAt ? dayjs(currentCalled.calledAt).format('HH:mm:ss') : '-'}
             </Text>
+            <View className={styles.countdownRow}>
+              <Text className={styles.countdownLabel}>到场倒计时</Text>
+              <Text className={classnames(
+                styles.countdownValue,
+                remainingSeconds <= 30 && styles.urgent
+              )}>
+                ⏱ {formatTime(remainingSeconds)}
+              </Text>
+            </View>
+            <View className={styles.callActions}>
+              <View
+                className={classnames(styles.callActionBtn, styles.primary)}
+                onClick={() => handleMarkPlaying(currentCalled.id)}
+              >
+                <Text>✓ 已到场</Text>
+              </View>
+              <View
+                className={classnames(styles.callActionBtn, styles.danger)}
+                onClick={() => handleMarkNoShow(currentCalled.id)}
+              >
+                <Text>✕ 过号</Text>
+              </View>
+            </View>
           </>
         )}
         {playingItem && !currentCalled && (
@@ -400,6 +497,8 @@ const QueuePage: React.FC = () => {
                 onMarkPlaying={handleMarkPlaying}
                 onMarkCompleted={handleMarkCompleted}
                 onLeave={handleLeave}
+                onRestore={handleRestoreNoShow}
+                onMarkNoShow={handleMarkNoShow}
                 showActions={true}
               />
             ))

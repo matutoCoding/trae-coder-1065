@@ -15,9 +15,10 @@ import { getBookedSlotsForCourt, isSlotBooked } from '@/utils/conflict';
 import CourtCard from '@/components/CourtCard';
 import TimeSlotPicker from '@/components/TimeSlot';
 import ScheduleView from '@/components/ScheduleView';
+import WeeklyScheduleView from '@/components/WeeklyScheduleView';
 import styles from './index.module.scss';
 
-type ViewMode = 'list' | 'schedule';
+type ViewMode = 'list' | 'schedule' | 'weekly';
 
 const TYPE_FILTERS: { label: string; value: CourtType | 'all' }[] = [
   { label: '全部', value: 'all' },
@@ -210,6 +211,24 @@ const BookingPage: React.FC = () => {
     setScheduleKey((k) => k + 1);
   };
 
+  const handleWeeklySelect = useCallback((courtId: string, date: string) => {
+    console.log('[BookingPage] 周视图选择:', courtId, date);
+    setSelectedDate(date);
+    setViewMode('schedule');
+    setScheduleKey((k) => k + 1);
+
+    const court = courts.find((c) => c.id === courtId);
+    if (court) {
+      setSelectedCourt(court);
+    }
+
+    Taro.showToast({
+      title: '已切换到排期视图',
+      icon: 'none',
+      duration: 1000
+    });
+  }, []);
+
   return (
     <ScrollView
       className={styles.page}
@@ -268,13 +287,19 @@ const BookingPage: React.FC = () => {
               className={classnames(styles.viewTab, viewMode === 'list' && styles.active)}
               onClick={() => setViewMode('list')}
             >
-              <Text>📋 列表视图</Text>
+              <Text>📋 列表</Text>
             </View>
             <View
               className={classnames(styles.viewTab, viewMode === 'schedule' && styles.active)}
               onClick={() => setViewMode('schedule')}
             >
-              <Text>📅 排期视图</Text>
+              <Text>📅 日排期</Text>
+            </View>
+            <View
+              className={classnames(styles.viewTab, viewMode === 'weekly' && styles.active)}
+              onClick={() => setViewMode('weekly')}
+            >
+              <Text>📆 周视图</Text>
             </View>
           </View>
 
@@ -317,6 +342,16 @@ const BookingPage: React.FC = () => {
               <CourtCard key={court.id} court={court} onBook={handleSelectCourt} />
             ))
           )}
+        </View>
+      ) : viewMode === 'weekly' ? (
+        <View className={styles.weeklySection}>
+          <View className={styles.sectionTitle}>
+            <Text className={styles.titleText}>周视图 · 快速预览</Text>
+            <Text className={styles.countBadge}>点击某一天预约</Text>
+          </View>
+          <WeeklyScheduleView
+            onDateSelect={handleWeeklySelect}
+          />
         </View>
       ) : (
         <View className={styles.scheduleSection}>

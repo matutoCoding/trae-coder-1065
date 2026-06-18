@@ -11,6 +11,7 @@ interface CourtQueue {
 
 interface QueueStore {
   courtQueues: Record<string, CourtQueue>;
+  defaultCallExpireSeconds: number;
   joinQueue: (
     courtId: string,
     userName: string,
@@ -23,6 +24,9 @@ interface QueueStore {
   callSpecific: (courtId: string, queueId: string) => void;
   markPlaying: (courtId: string, queueId: string) => void;
   markCompleted: (courtId: string, queueId: string) => void;
+  markNoShow: (courtId: string, queueId: string) => void;
+  restoreNoShow: (courtId: string, queueId: string) => void;
+  checkExpiredCalls: (courtId: string) => QueueItem[];
   insertVip: (
     courtId: string,
     userName: string,
@@ -39,6 +43,7 @@ interface QueueStore {
   getCourtWaitingCount: (courtId: string) => number;
   getCourtCurrentCalled: (courtId: string) => QueueItem | null;
   getCourtCurrentPlaying: (courtId: string) => QueueItem | null;
+  getCourtNoShowList: (courtId: string) => QueueItem[];
   getAllWaitingCount: () => number;
 }
 
@@ -200,6 +205,7 @@ const initCourtQueues = (): Record<string, CourtQueue> => {
 
 export const useQueueStore = create<QueueStore>((set, get) => ({
   courtQueues: initCourtQueues(),
+  defaultCallExpireSeconds: 120,
 
   joinQueue: (courtId, userName, peopleCount, priority = 'normal', userId) => {
     const court = courts.find((c) => c.id === courtId);
@@ -261,13 +267,16 @@ export const useQueueStore = create<QueueStore>((set, get) => ({
   },
 
   callNext: (courtId) => {
-    const sorted = get().getSortedCourtQueue(courtId);
+    const state = get();
+    const sorted = state.getSortedCourtQueue(courtId);
     const nextItem = sorted.find((q) => q.status === 'waiting');
 
     if (!nextItem) {
       console.log('[Queue] 该场地没有等待中的人员:', courtId);
       return null;
     }
+
+    const expireSeconds = state.defaultCallExpireSeconds;
 
     set((state) => {
       const currentQueue = state.courtQueues[courtId];
@@ -279,7 +288,12 @@ export const useQueueStore = create<QueueStore>((set, get) => ({
             ...currentQueue,
             items: currentQueue.items.map((q) =>
               q.id === nextItem.id
-                ? { ...q, status: 'called', calledAt: dayjs().format('YYYY-MM-DD HH:mm:ss') }
+                ? {
+                    ...q,
+                    status: 'called' as const,
+                    calledAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+                    callExpireSeconds: expireSeconds
+                  }
                 : q
             )
           }
@@ -293,12 +307,14 @@ export const useQueueStore = create<QueueStore>((set, get) => ({
       court?.name,
       'NO.',
       nextItem.queueNumber,
-      nextItem.userName
+      nextItem.userName,
+      `过期:${expireSeconds}秒`
     );
     return get().courtQueues[courtId].items.find((q) => q.id === nextItem.id) || null;
   },
 
   callSpecific: (courtId, queueId) => {
+    const expireSeconds = get().defaultCallExpireSeconds;
     set((state) => {
       const currentQueue = state.courtQueues[courtId];
       if (!currentQueue) return state;
@@ -309,7 +325,12 @@ export const useQueueStore = create<QueueStore>((set, get) => ({
             ...currentQueue,
             items: currentQueue.items.map((q) =>
               q.id === queueId && q.status === 'waiting'
-                ? { ...q, status: 'called', calledAt: dayjs().format('YYYY-MM-DD HH:mm:ss') }
+                ? {
+                    ...q,
+                    status: 'called' as const,
+                    calledAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+                    callExpireSeconds: expireSeconds
+                  }
                 : q
             )
           }
@@ -391,6 +412,112 @@ export const useQueueStore = create<QueueStore>((set, get) => ({
   getCourtCurrentPlaying: (courtId) => {
     const sorted = get().getSortedCourtQueue(courtId);
     return sorted.find((q) => q.status === 'playing') || null;
+  },
+
+  markNoShow: (courtId, queueId) => {
+    set((state) => {
+      const currentQueue = state.courtQueues[courtId];
+      if (!currentQueue) return state;
+      return {
+        courtQueues: {
+          ...state.courtQueues,
+          [courtId]: {
+            ...currentQueue,
+            items: currentQueue.items.map((q) =>
+              q.id === queueId
+                ? {
+                    ...q,
+                    status: 'no_show' as const,
+                    noShowAt: dayjs().format('YYYY-MM-DD HH:mm:ss')
+                  }
+                : q
+            )
+          }
+        }
+      };
+    });
+    console.log('[Queue] 标记过号:', courtId, queueId);
+  },
+
+  restoreNoShow: (courtId, queueId) => {
+    set((state) => {
+      const currentQueue = state.courtQueues[courtId];
+      if (!currentQueue) return state;
+      return {
+        courtQueues: {
+          ...state.courtQueues,
+          [courtId]: {
+            ...currentQueue,
+            items: currentQueue.items.map((q) =>
+              q.id === queueId
+                ? {
+                    ...q,
+                    status: 'waiting' as const,
+                    noShowAt: undefined,
+                    calledAt: undefined,
+                    callExpireSeconds: undefined
+                  }
+                : q
+            )
+          }
+        }
+      };
+    });
+    console.log('[Queue] 恢复过号到队列:', courtId, queueId);
+  },
+
+  checkExpiredCalls: (courtId) => {
+    const state = get();
+    const currentQueue = state.courtQueues[courtId];
+    if (!currentQueue) return [];
+
+    const now = dayjs();
+    const expiredItems: QueueItem[] = [];
+
+    currentQueue.items.forEach((item) => {
+      if (item.status === 'called' && item.calledAt && item.callExpireSeconds) {
+        const calledTime = dayjs(item.calledAt);
+        const expireTime = calledTime.add(item.callExpireSeconds, 'second');
+        if (now.isAfter(expireTime)) {
+          expiredItems.push(item);
+        }
+      }
+    });
+
+    if (expiredItems.length > 0) {
+      set((state) => {
+        const currentQueue = state.courtQueues[courtId];
+        if (!currentQueue) return state;
+        return {
+          courtQueues: {
+            ...state.courtQueues,
+            [courtId]: {
+              ...currentQueue,
+              items: currentQueue.items.map((q) => {
+                if (expiredItems.find((e) => e.id === q.id)) {
+                  return {
+                    ...q,
+                    status: 'no_show' as const,
+                    noShowAt: dayjs().format('YYYY-MM-DD HH:mm:ss')
+                  };
+                }
+                return q;
+              })
+            }
+          }
+        };
+      });
+      console.log('[Queue] 自动过号:', courtId, expiredItems.length, '人');
+    }
+
+    return expiredItems;
+  },
+
+  getCourtNoShowList: (courtId) => {
+    const items = get().courtQueues[courtId]?.items || [];
+    return items
+      .filter((q) => q.status === 'no_show')
+      .sort((a, b) => new Date(b.noShowAt || '').getTime() - new Date(a.noShowAt || '').getTime());
   },
 
   getAllWaitingCount: () => {

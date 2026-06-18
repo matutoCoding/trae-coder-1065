@@ -1,0 +1,259 @@
+@import '@/styles/variables.scss';
+
+.weeklyContainer {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  margin-bottom: $spacing-md;
+}
+
+.weeklyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.weekNav {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: $color-bg-page;
+  border-radius: 50%;
+  font-size: $font-size-xl;
+  color: $color-text-secondary;
+
+  &.disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  &:active {
+    transform: scale(0.92);
+  }
+}
+
+.weekTitle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xs;
+
+  Text:first-child {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+  }
+}
+
+.weekSub {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.legendRow {
+  display: flex;
+  justify-content: center;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-md;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+}
+
+.legendDot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 6rpx;
+
+  &.free {
+    background-color: #22c55e;
+  }
+
+  &.moderate {
+    background-color: #f59e0b;
+  }
+
+  &.busy {
+    background-color: #ef4444;
+  }
+}
+
+.weeklyScroll {
+  width: 100%;
+  margin-bottom: $spacing-sm;
+}
+
+.weeklyGrid {
+  display: flex;
+  flex-direction: column;
+  min-width: 100%;
+}
+
+.courtColHeader {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: $color-bg-card;
+}
+
+.emptyCorner {
+  width: 160rpx;
+  flex-shrink: 0;
+}
+
+.dayHeader {
+  flex: 1;
+  min-width: 130rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-sm 0;
+  gap: 4rpx;
+  border-bottom: 2rpx solid $color-divider;
+
+  &.today {
+    background-color: rgba(34, 197, 94, 0.08);
+  }
+
+  &.past {
+    opacity: 0.5;
+  }
+}
+
+.dayWeekday {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.today .dayWeekday {
+  color: $color-primary;
+  font-weight: $font-weight-medium;
+}
+
+.dayDate {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.courtRow {
+  display: flex;
+  border-bottom: 1rpx solid $color-divider-light;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.courtNameCell {
+  width: 160rpx;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4rpx;
+  padding: $spacing-sm 0;
+  padding-right: $spacing-sm;
+  border-right: 2rpx solid $color-divider;
+  background-color: $color-bg-card;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+.courtName {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.courtType {
+  font-size: 20rpx;
+  color: $color-text-tertiary;
+}
+
+.dayCell {
+  flex: 1;
+  min-width: 130rpx;
+  padding: $spacing-sm $spacing-xs;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+  transition: all $transition-fast;
+
+  &:active {
+    transform: scale(0.96);
+  }
+
+  &.today {
+    background-color: rgba(34, 197, 94, 0.05);
+  }
+
+  &.past {
+    background-color: $color-bg-disabled;
+  }
+
+  &.free {
+    background-color: rgba(34, 197, 94, 0.1);
+  }
+
+  &.moderate {
+    background-color: rgba(245, 158, 11, 0.1);
+  }
+
+  &.busy {
+    background-color: rgba(239, 68, 68, 0.1);
+  }
+}
+
+.availableCount {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+}
+
+.free .availableCount {
+  color: #16a34a;
+}
+
+.moderate .availableCount {
+  color: #d97706;
+}
+
+.busy .availableCount {
+  color: #dc2626;
+}
+
+.availableLabel {
+  font-size: 20rpx;
+  color: $color-text-secondary;
+}
+
+.firstAvailable {
+  font-size: 18rpx;
+  color: $color-text-tertiary;
+  margin-top: 4rpx;
+}
+
+.pastText {
+  font-size: 20rpx;
+  color: $color-text-tertiary;
+}
+
+.weeklyTip {
+  text-align: center;
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  padding-top: $spacing-xs;
+}
