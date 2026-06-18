@@ -1,0 +1,88 @@
+@use '@/styles/variables.scss' as *;
+
+.slotGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-sm;
+}
+
+.slotItem {
+  position: relative;
+  background-color: $color-bg-card;
+  border: 2rpx solid $color-border;
+  border-radius: $radius-md;
+  padding: $spacing-md $spacing-sm;
+  text-align: center;
+  transition: all $transition-fast;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.timeLabel {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  line-height: 1.4;
+}
+
+.periodLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: $spacing-xs;
+}
+
+.available {
+  .timeLabel {
+    color: $color-text-primary;
+  }
+
+  &:active {
+    background-color: $color-bg-hover;
+  }
+}
+
+.selected {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  border-color: $color-primary;
+
+  .timeLabel,
+  .periodLabel {
+    color: $color-text-white;
+  }
+}
+
+.booked {
+  background-color: $color-bg-hover;
+  opacity: 0.6;
+  border-style: dashed;
+
+  .timeLabel,
+  .periodLabel {
+    color: $color-text-disabled;
+    text-decoration: line-through;
+  }
+}
+
+.past {
+  opacity: 0.4;
+
+  .timeLabel,
+  .periodLabel {
+    color: $color-text-disabled;
+  }
+}
+
+.consecutiveBadge {
+  position: absolute;
+  top: -8rpx;
+  right: -8rpx;
+  background-color: $color-accent;
+  color: $color-text-primary;
+  font-size: 20rpx;
+  font-weight: $font-weight-semibold;
+  padding: 2rpx 10rpx;
+  border-radius: $radius-round;
+  z-index: 1;
+}

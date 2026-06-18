@@ -1,0 +1,146 @@
+@use '@/styles/variables.scss' as *;
+
+.card {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  box-shadow: $shadow-card;
+  margin-bottom: $spacing-md;
+  transition: all $transition-base;
+
+  &:active {
+    box-shadow: $shadow-card-hover;
+    transform: translateY(-2rpx);
+  }
+}
+
+.header {
+  position: relative;
+  height: 280rpx;
+  width: 100%;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+}
+
+.overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: $spacing-lg;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-xs;
+}
+
+.name {
+  color: $color-text-white;
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+}
+
+.priceBadge {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: $color-primary;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-round;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+}
+
+.typeLabel {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: $font-size-sm;
+}
+
+.content {
+  padding: $spacing-lg;
+}
+
+.description {
+  color: $color-text-secondary;
+  font-size: $font-size-md;
+  line-height: $line-height-normal;
+  margin-bottom: $spacing-md;
+  @include text-ellipsis-multi(2);
+}
+
+.tagsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.tag {
+  background-color: $color-bg-tag;
+  color: $color-primary;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-xs;
+  font-size: $font-size-xs;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.infoRow {
+  display: flex;
+  gap: $spacing-lg;
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  color: $color-text-tertiary;
+  font-size: $font-size-sm;
+}
+
+.infoValue {
+  color: $color-text-secondary;
+  font-weight: $font-weight-medium;
+}
+
+.bookBtn {
+  @include button-reset;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  color: $color-text-white;
+  height: $button-height-sm;
+  padding: 0 $spacing-lg;
+  border-radius: $radius-button;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+
+  &.disabled {
+    background-color: $color-text-disabled;
+    opacity: 0.6;
+  }
+}
+
+.maintenanceBadge {
+  position: absolute;
+  top: $spacing-md;
+  left: $spacing-md;
+  background-color: $color-warning;
+  color: $color-text-white;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-xs;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+}

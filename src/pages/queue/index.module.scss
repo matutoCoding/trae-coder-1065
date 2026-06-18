@@ -1,0 +1,296 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding-bottom: calc($spacing-lg + env(safe-area-inset-bottom));
+}
+
+.topSection {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
+  padding: $spacing-xl $page-padding;
+  color: $color-text-white;
+}
+
+.pageTitle {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  margin-bottom: $spacing-lg;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-md;
+}
+
+.statCard {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  text-align: center;
+  backdrop-filter: blur(10rpx);
+}
+
+.statValue {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+}
+
+.statLabel {
+  font-size: $font-size-xs;
+  opacity: 0.9;
+  margin-top: $spacing-xs;
+}
+
+.currentCallSection {
+  margin: 0 $page-padding;
+  margin-top: -$spacing-lg;
+  background: linear-gradient(135deg, $color-accent 0%, $color-accent-dark 100%);
+  border-radius: $radius-xl;
+  padding: $spacing-xl;
+  box-shadow: $shadow-float;
+  position: relative;
+  overflow: hidden;
+}
+
+.currentCallBg {
+  position: absolute;
+  top: -40rpx;
+  right: -20rpx;
+  font-size: 200rpx;
+  opacity: 0.15;
+  font-weight: $font-weight-bold;
+}
+
+.currentCallLabel {
+  font-size: $font-size-sm;
+  opacity: 0.8;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+}
+
+.currentCallNumber {
+  font-size: 100rpx;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  line-height: 1;
+  letter-spacing: 4rpx;
+}
+
+.currentCallUser {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-top: $spacing-md;
+}
+
+.currentCallTime {
+  font-size: $font-size-sm;
+  color: rgba(0, 0, 0, 0.6);
+  margin-top: $spacing-xs;
+}
+
+.actionsSection {
+  padding: $spacing-lg $page-padding;
+}
+
+.actionsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-md;
+}
+
+.actionCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg $spacing-md;
+  text-align: center;
+  box-shadow: $shadow-card;
+  transition: all $transition-base;
+
+  &:active {
+    transform: scale(0.96);
+    box-shadow: $shadow-card-hover;
+  }
+
+  &.vip {
+    background: linear-gradient(135deg, #fff1f0 0%, #fff 100%);
+  }
+
+  &.emergency {
+    background: linear-gradient(135deg, #f5f3ff 0%, #fff 100%);
+  }
+}
+
+.actionIcon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: $radius-round;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto $spacing-sm;
+  font-size: 40rpx;
+
+  &.normal {
+    background-color: rgba(34, 197, 94, 0.15);
+  }
+
+  &.vip {
+    background-color: rgba(239, 68, 68, 0.15);
+  }
+
+  &.emergency {
+    background-color: rgba(139, 92, 246, 0.15);
+  }
+}
+
+.actionTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.actionDesc {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.callNextSection {
+  padding: 0 $page-spacing $spacing-md;
+}
+
+.callNextBtn {
+  @include button-reset;
+  width: 100%;
+  height: $button-height-lg;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  color: $color-text-white;
+  border-radius: $radius-button;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  box-shadow: $shadow-float;
+
+  &.disabled {
+    background-color: $color-text-disabled;
+    background-image: none;
+    opacity: 0.6;
+    box-shadow: none;
+  }
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.99);
+  }
+}
+
+.queueSection {
+  padding: $spacing-md $page-padding;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.sectionCount {
+  background-color: $color-primary;
+  color: $color-text-white;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-round;
+  font-size: $font-size-xs;
+}
+
+.queueTabs {
+  display: flex;
+  background-color: $color-bg-card;
+  border-radius: $radius-md;
+  padding: 6rpx;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.queueTab {
+  flex: 1;
+  text-align: center;
+  padding: $spacing-sm 0;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  transition: all $transition-fast;
+
+  &.active {
+    background-color: $color-primary;
+    color: $color-text-white;
+    font-weight: $font-weight-semibold;
+  }
+}
+
+.queueList {
+  padding-bottom: $spacing-xl;
+}
+
+.priorityLegend {
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  background-color: $color-bg-card;
+  border-radius: $radius-md;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+}
+
+.legendDot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: $radius-round;
+
+  &.vip {
+    background-color: $color-priority-vip;
+  }
+
+  &.emergency {
+    background-color: $color-priority-emergency;
+  }
+
+  &.normal {
+    background-color: $color-priority-normal;
+  }
+}
+
+.emptyQueue {
+  padding: $spacing-xl * 2;
+  text-align: center;
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+}
+
+.emptyEmoji {
+  font-size: 80rpx;
+  margin-bottom: $spacing-md;
+}
+
+.emptyText {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+}

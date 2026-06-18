@@ -1,0 +1,30 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl * 2;
+}
+
+.icon {
+  font-size: 160rpx;
+  margin-bottom: $spacing-xl;
+}
+
+.title {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.desc {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+  text-align: center;
+  line-height: $line-height-loose;
+}

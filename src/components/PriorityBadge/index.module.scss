@@ -1,0 +1,27 @@
+@use '@/styles/variables.scss' as *;
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-xs;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+}
+
+.vip {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: $color-priority-vip;
+}
+
+.emergency {
+  background-color: rgba(139, 92, 246, 0.1);
+  color: $color-priority-emergency;
+}
+
+.normal {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: $color-priority-normal;
+}

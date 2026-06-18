@@ -1,0 +1,195 @@
+@use '@/styles/variables.scss' as *;
+
+.item {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+  margin-bottom: $spacing-md;
+  position: relative;
+  transition: all $transition-base;
+
+  &:active {
+    transform: scale(0.99);
+  }
+
+  &.playing {
+    border-left: 6rpx solid $color-primary;
+  }
+
+  &.called {
+    border-left: 6rpx solid $color-accent;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.numberRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.queueNumber {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  line-height: 1;
+}
+
+.numberPrefix {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-bottom: $spacing-xs;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.userName {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.joinTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.statusBadge {
+  padding: 6rpx 16rpx;
+  border-radius: $radius-round;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+
+  &.waiting {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: $color-info;
+  }
+
+  &.called {
+    background-color: rgba(251, 191, 36, 0.2);
+    color: $color-warning;
+  }
+
+  &.playing {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: $color-success;
+  }
+
+  &.completed {
+    background-color: rgba(139, 144, 156, 0.1);
+    color: $color-text-tertiary;
+  }
+}
+
+.divider {
+  height: 1rpx;
+  background-color: $color-divider;
+  margin: $spacing-md 0;
+}
+
+.infoRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+}
+
+.infoLeft {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.infoLabel {
+  color: $color-text-tertiary;
+}
+
+.waitTime {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: $font-size-sm;
+
+  .highlight {
+    color: $color-error;
+    font-weight: $font-weight-semibold;
+    font-size: $font-size-lg;
+  }
+
+  .short {
+    color: $color-warning;
+    font-weight: $font-weight-semibold;
+    font-size: $font-size-lg;
+  }
+
+  .ok {
+    color: $color-primary;
+    font-weight: $font-weight-semibold;
+    font-size: $font-size-lg;
+  }
+}
+
+.footer {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
+
+.btn {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-sm;
+  border-radius: $radius-button;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+
+  &.primary {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    color: $color-text-white;
+  }
+
+  &.warning {
+    background-color: rgba(251, 191, 36, 0.15);
+    color: $color-warning;
+  }
+
+  &.danger {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: $color-error;
+  }
+
+  &.success {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: $color-success;
+  }
+
+  &.disabled {
+    background-color: $color-bg-hover;
+    color: $color-text-disabled;
+  }
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+}

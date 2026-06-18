@@ -1,0 +1,44 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding: $spacing-xl $page-padding;
+}
+
+.sectionTitle {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-lg;
+}
+
+.placeholder {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-xl * 2;
+  text-align: center;
+  box-shadow: $shadow-card;
+}
+
+.icon {
+  font-size: 120rpx;
+  margin-bottom: $spacing-lg;
+}
+
+.title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+}
+
+.desc {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  line-height: $line-height-loose;
+}
+
+.list {
+  padding-top: $spacing-md;
+}

@@ -1,0 +1,181 @@
+@use '@/styles/variables.scss' as *;
+
+.card {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+  margin-bottom: $spacing-md;
+  transition: all $transition-base;
+
+  &:active {
+    box-shadow: $shadow-card-hover;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.leftInfo {
+  flex: 1;
+}
+
+.courtName {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.tagsRow {
+  display: flex;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.tag {
+  background-color: $color-bg-tag;
+  color: $color-primary;
+  padding: 2rpx 12rpx;
+  border-radius: $radius-xs;
+  font-size: $font-size-xs;
+}
+
+.statusBadge {
+  padding: 6rpx 16rpx;
+  border-radius: $radius-round;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+
+  &.confirmed {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: $color-success;
+  }
+
+  &.completed {
+    background-color: rgba(139, 144, 156, 0.1);
+    color: $color-text-tertiary;
+  }
+
+  &.cancelled {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: $color-error;
+  }
+}
+
+.divider {
+  height: 1rpx;
+  background-color: $color-divider;
+  margin: $spacing-md 0;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-md;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.infoLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.infoValue {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+}
+
+.coachInfo {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-md;
+  background-color: rgba(251, 191, 36, 0.1);
+  border-radius: $radius-md;
+  margin-bottom: $spacing-md;
+}
+
+.coachIcon {
+  width: 40rpx;
+  height: 40rpx;
+  background-color: $color-accent;
+  border-radius: $radius-round;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-text-primary;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+}
+
+.coachText {
+  flex: 1;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: $spacing-md;
+}
+
+.price {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-primary;
+}
+
+.priceUnit {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-normal;
+  color: $color-text-secondary;
+}
+
+.btnGroup {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.btn {
+  @include button-reset;
+  height: $button-height-sm;
+  padding: 0 $spacing-lg;
+  border-radius: $radius-button;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+
+  &.primary {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    color: $color-text-white;
+  }
+
+  &.danger {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: $color-error;
+    border: 2rpx solid rgba(239, 68, 68, 0.3);
+  }
+
+  &.disabled {
+    background-color: $color-bg-hover;
+    color: $color-text-tertiary;
+  }
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+}

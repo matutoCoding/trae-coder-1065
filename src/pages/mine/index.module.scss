@@ -1,0 +1,335 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding-bottom: calc($spacing-xl + env(safe-area-inset-bottom));
+}
+
+.profileHeader {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
+  padding: $spacing-xl $page-padding $spacing-xxl;
+  color: $color-text-white;
+  position: relative;
+  overflow: hidden;
+  padding-bottom: 120rpx;
+}
+
+.bgDecoration {
+  position: absolute;
+  top: -100rpx;
+  right: -100rpx;
+  width: 300rpx;
+  height: 300rpx;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: $radius-round;
+}
+
+.profileRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+  position: relative;
+  z-index: 1;
+}
+
+.avatar {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: $radius-round;
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 4rpx solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.userInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xs;
+}
+
+.userName {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  @include text-ellipsis;
+}
+
+.vipBadge {
+  background: linear-gradient(135deg, $color-accent 0%, $color-accent-dark 100%);
+  color: $color-text-primary;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-round;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  flex-shrink: 0;
+}
+
+.userPhone {
+  font-size: $font-size-sm;
+  opacity: 0.9;
+  margin-bottom: $spacing-xs;
+}
+
+.vipInfo {
+  font-size: $font-size-xs;
+  opacity: 0.85;
+}
+
+.statsRow {
+  display: flex;
+  margin-top: $spacing-xl;
+  position: relative;
+  z-index: 1;
+}
+
+.statItem {
+  flex: 1;
+  text-align: center;
+  border-right: 1rpx solid rgba(255, 255, 255, 0.2);
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.statValue {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+}
+
+.statLabel {
+  font-size: $font-size-xs;
+  opacity: 0.9;
+  margin-top: $spacing-xs;
+}
+
+.floatingCards {
+  margin: 0 $page-spacing;
+  margin-top: -80rpx;
+  position: relative;
+  z-index: 2;
+}
+
+.vipCard {
+  background: linear-gradient(135deg, #1d2129 0%, #374151 100%);
+  border-radius: $radius-xl;
+  padding: $spacing-xl;
+  color: $color-text-white;
+  box-shadow: $shadow-float;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: $spacing-md;
+}
+
+.vipCardBg {
+  position: absolute;
+  top: -30rpx;
+  right: -30rpx;
+  font-size: 180rpx;
+  opacity: 0.1;
+  font-weight: $font-weight-bold;
+}
+
+.vipCardLabel {
+  font-size: $font-size-xs;
+  opacity: 0.7;
+  letter-spacing: 2rpx;
+  margin-bottom: $spacing-sm;
+}
+
+.vipCardTitle {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  margin-bottom: $spacing-sm;
+  background: linear-gradient(135deg, $color-accent 0%, #fff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.vipCardDesc {
+  font-size: $font-size-sm;
+  opacity: 0.8;
+  margin-bottom: $spacing-lg;
+}
+
+.vipCardBtn {
+  @include button-reset;
+  display: inline-flex;
+  background: linear-gradient(135deg, $color-accent 0%, $color-accent-dark 100%);
+  color: $color-text-primary;
+  height: $button-height-sm;
+  padding: 0 $spacing-xl;
+  border-radius: $radius-button;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+}
+
+.coachCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+  margin-bottom: $spacing-md;
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  transition: all $transition-base;
+
+  &:active {
+    box-shadow: $shadow-card-hover;
+    transform: translateY(-2rpx);
+  }
+}
+
+.coachIcon {
+  width: 96rpx;
+  height: 96rpx;
+  background-color: rgba(251, 191, 36, 0.15);
+  border-radius: $radius-lg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+  flex-shrink: 0;
+}
+
+.coachInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.coachTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.coachDesc {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  @include text-ellipsis;
+}
+
+.coachBtn {
+  @include button-reset;
+  background-color: rgba(34, 197, 94, 0.1);
+  color: $color-primary;
+  height: $button-height-sm;
+  padding: 0 $spacing-lg;
+  border-radius: $radius-button;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  flex-shrink: 0;
+
+  &:active {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+}
+
+.menuSection {
+  padding: 0 $page-spacing;
+  margin-top: $spacing-md;
+}
+
+.menuGroup {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-xs 0;
+  box-shadow: $shadow-card;
+  margin-bottom: $spacing-md;
+  overflow: hidden;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  padding: $spacing-md $spacing-lg;
+  transition: background-color $transition-fast;
+
+  &:active {
+    background-color: $color-bg-hover;
+  }
+}
+
+.menuIcon {
+  width: 64rpx;
+  height: 64rpx;
+  background-color: $color-bg-tag;
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  flex-shrink: 0;
+  margin-right: $spacing-md;
+
+  &.blue {
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+
+  &.orange {
+    background-color: rgba(251, 191, 36, 0.15);
+  }
+
+  &.purple {
+    background-color: rgba(139, 92, 246, 0.1);
+  }
+
+  &.red {
+    background-color: rgba(239, 68, 68, 0.1);
+  }
+
+  &.gray {
+    background-color: rgba(139, 144, 156, 0.1);
+  }
+
+  &.green {
+    background-color: rgba(34, 197, 94, 0.1);
+  }
+}
+
+.menuText {
+  flex: 1;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+}
+
+.menuArrow {
+  color: $color-text-tertiary;
+  font-size: $font-size-md;
+  flex-shrink: 0;
+}
+
+.divider {
+  height: 1rpx;
+  background-color: $color-divider;
+  margin-left: $spacing-xxl;
+}
+
+.sectionTitle {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  margin: $spacing-md $spacing-sm;
+  padding-left: $spacing-sm;
+}
+
+.versionText {
+  text-align: center;
+  font-size: $font-size-xs;
+  color: $color-text-disabled;
+  margin-top: $spacing-xl;
+}
